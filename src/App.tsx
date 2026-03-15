@@ -5,13 +5,12 @@
 
 import React, { useState } from 'react';
 import { GoogleGenAI } from "@google/genai";
-import { Sparkles, Loader2, BookOpen, Send, X } from 'lucide-react';
+import { Sparkles, Loader2, BookOpen, Send, X, Key, Settings, ShieldCheck } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import ReactMarkdown from 'react-markdown';
 
-// Khởi tạo Gemini AI
-// Lưu ý: process.env.GEMINI_API_KEY được tự động chèn bởi hệ thống
-const genAI = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || '' });
+// Khởi tạo Gemini AI (Sẽ được khởi tạo lại trong hàm nếu dùng API riêng)
+const DEFAULT_API_KEY = process.env.GEMINI_API_KEY || '';
 
 // Prompt cơ sở - Người dùng có thể tùy chỉnh ở đây
 const BASE_PROMPT = `Soạn bài tập dạng Dictionary giống đề tuyển sinh lớp 10 TP.HCM (câu 35–36).
@@ -81,10 +80,20 @@ export default function App() {
   const [result, setResult] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+  const [apiMode, setApiMode] = useState<'default' | 'custom'>('default');
+  const [customApiKey, setCustomApiKey] = useState('');
+  const [showSettings, setShowSettings] = useState(false);
 
   const generateExercise = async () => {
     if (!keyword.trim()) {
       setError('Vui lòng nhập từ khóa!');
+      return;
+    }
+
+    const apiKeyToUse = apiMode === 'default' ? DEFAULT_API_KEY : customApiKey;
+    
+    if (!apiKeyToUse) {
+      setError(apiMode === 'default' ? 'API mặc định chưa được cấu hình.' : 'Vui lòng nhập API Key của bạn!');
       return;
     }
 
@@ -93,7 +102,8 @@ export default function App() {
     setResult('');
 
     try {
-      const response = await genAI.models.generateContent({
+      const ai = new GoogleGenAI({ apiKey: apiKeyToUse });
+      const response = await ai.models.generateContent({
         model: "gemini-3-flash-preview",
         contents: `${BASE_PROMPT} ${keyword}`,
       });
@@ -123,13 +133,103 @@ export default function App() {
             </div>
             <h1 className="text-xl font-bold tracking-tight">Dictionary Entry Generator</h1>
           </div>
-          <div className="text-xs font-mono text-slate-400 uppercase tracking-widest">
-            Powered by Gemini
+          <div className="flex items-center gap-4">
+            <div className="hidden md:block text-xs font-mono text-slate-400 uppercase tracking-widest">
+              Powered by Gemini
+            </div>
+            <button
+              onClick={() => setShowSettings(!showSettings)}
+              className={`p-2 hover:bg-slate-100 rounded-full transition-colors ${showSettings ? 'text-emerald-500 bg-emerald-50' : 'text-slate-500'}`}
+              title="Cấu hình API"
+            >
+              <Settings className={`w-5 h-5 ${showSettings ? 'rotate-90' : ''} transition-transform duration-300`} />
+            </button>
           </div>
         </div>
       </header>
 
       <main className="max-w-4xl mx-auto p-6 md:p-12">
+        {/* API Settings Panel */}
+        <AnimatePresence>
+          {showSettings && (
+            <motion.div
+              initial={{ height: 0, opacity: 0, marginBottom: 0 }}
+              animate={{ height: 'auto', opacity: 1, marginBottom: 32 }}
+              exit={{ height: 0, opacity: 0, marginBottom: 0 }}
+              className="overflow-hidden"
+            >
+              <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-sm font-semibold text-slate-900 flex items-center gap-2">
+                    <Key className="w-4 h-4 text-emerald-500" />
+                    Cấu hình API Gemini
+                  </h3>
+                  <button 
+                    onClick={() => setShowSettings(false)}
+                    className="text-slate-400 hover:text-slate-600"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+                
+                <div className="flex flex-col gap-4">
+                  <div className="flex p-1 bg-slate-100 rounded-xl">
+                    <button
+                      onClick={() => setApiMode('default')}
+                      className={`flex-1 flex items-center justify-center gap-2 py-2 px-4 rounded-lg text-sm font-medium transition-all ${
+                        apiMode === 'default' 
+                          ? 'bg-white text-emerald-600 shadow-sm' 
+                          : 'text-slate-500 hover:text-slate-700'
+                      }`}
+                    >
+                      <ShieldCheck className="w-4 h-4" />
+                      API Mặc định
+                    </button>
+                    <button
+                      onClick={() => setApiMode('custom')}
+                      className={`flex-1 flex items-center justify-center gap-2 py-2 px-4 rounded-lg text-sm font-medium transition-all ${
+                        apiMode === 'custom' 
+                          ? 'bg-white text-emerald-600 shadow-sm' 
+                          : 'text-slate-500 hover:text-slate-700'
+                      }`}
+                    >
+                      <Key className="w-4 h-4" />
+                      API Riêng
+                    </button>
+                  </div>
+
+                  {apiMode === 'custom' && (
+                    <motion.div
+                      initial={{ opacity: 0, y: -10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                    >
+                      <input
+                        type="password"
+                        value={customApiKey}
+                        onChange={(e) => setCustomApiKey(e.target.value)}
+                        placeholder="Nhập Gemini API Key của bạn..."
+                        className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none transition-all text-sm"
+                      />
+                      <p className="mt-2 text-[11px] text-slate-400">
+                        * API Key của bạn chỉ được lưu trong phiên làm việc này và không được gửi đi đâu khác ngoài Google Gemini.
+                      </p>
+                    </motion.div>
+                  )}
+
+                  {apiMode === 'default' && (
+                    <div className="bg-emerald-50 border border-emerald-100 rounded-xl p-3 flex items-start gap-3">
+                      <ShieldCheck className="w-4 h-4 text-emerald-500 mt-0.5" />
+                      <p className="text-xs text-emerald-700 leading-relaxed">
+                        Đang sử dụng API hệ thống do nhà phát triển cung cấp. Khóa API này được ẩn an toàn và không hiển thị với người dùng.
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
         {/* Input Section */}
         <motion.div 
           initial={{ opacity: 0, y: 20 }}
