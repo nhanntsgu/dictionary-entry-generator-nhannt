@@ -93,10 +93,39 @@ export default function App() {
     // Split content by lines to handle paragraphs
     const lines = result.split('\n');
     const paragraphs = lines.map(line => {
+      // Detect Markdown H1 (# ) for the word line
+      if (line.startsWith('# ')) {
+        const content = line.slice(2);
+        // Match word and phonetic part: "word /phonetic/"
+        const phoneticMatch = content.match(/^(.*?)\s(\/.*\/)$/);
+        
+        if (phoneticMatch) {
+          const word = phoneticMatch[1];
+          const phonetic = phoneticMatch[2];
+          return new Paragraph({
+            children: [
+              new TextRun({
+                text: word,
+                bold: true,
+                font: "Times New Roman",
+                size: 36, // 18pt
+              }),
+              new TextRun({
+                text: ' ' + phonetic,
+                font: "Times New Roman",
+                size: 24, // 12pt
+              }),
+            ],
+            spacing: {
+              line: 276,
+            },
+          });
+        }
+      }
+
       let isHeader = false;
       let cleanLine = line;
       
-      // Detect Markdown H1 (# ) for the word line
       if (line.startsWith('# ')) {
         isHeader = true;
         cleanLine = line.slice(2);
@@ -110,12 +139,12 @@ export default function App() {
             text: part.slice(2, -2),
             bold: true,
             font: "Times New Roman",
-            size: isHeader ? 36 : 24, // 18pt = 36 half-points, 12pt = 24 half-points
+            size: isHeader ? 36 : 24,
           });
         }
         return new TextRun({
           text: part,
-          bold: isHeader, // Word line is always bold
+          bold: isHeader,
           font: "Times New Roman",
           size: isHeader ? 36 : 24,
         });
@@ -423,7 +452,25 @@ export default function App() {
               </div>
               
               <div className="prose prose-slate max-w-none prose-headings:font-bold prose-h1:text-3xl prose-h2:text-2xl prose-p:text-slate-600 prose-li:text-slate-600 whitespace-pre-wrap">
-                <ReactMarkdown>{result}</ReactMarkdown>
+                <ReactMarkdown
+                  components={{
+                    h1: ({ children }) => {
+                      const text = String(children);
+                      const phoneticMatch = text.match(/^(.*?)\s(\/.*\/)$/);
+                      if (phoneticMatch) {
+                        return (
+                          <h1 className="mb-2 flex items-baseline gap-2">
+                            <span className="text-2xl font-bold">{phoneticMatch[1]}</span>
+                            <span className="text-base font-normal text-slate-500">{phoneticMatch[2]}</span>
+                          </h1>
+                        );
+                      }
+                      return <h1 className="text-2xl font-bold mb-2">{children}</h1>;
+                    }
+                  }}
+                >
+                  {result}
+                </ReactMarkdown>
               </div>
 
             </motion.div>
