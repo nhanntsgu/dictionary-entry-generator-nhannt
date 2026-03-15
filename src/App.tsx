@@ -538,50 +538,26 @@ export default function App() {
                 </div>
               </div>
               
-              <div className="prose prose-slate max-w-none prose-headings:font-bold prose-h1:text-3xl prose-h2:text-2xl prose-p:text-slate-600 prose-li:text-slate-600">
-                <motion.div
-                  initial="hidden"
-                  animate="visible"
-                  variants={{
-                    visible: {
-                      transition: {
-                        staggerChildren: 0.05,
-                      },
-                    },
+              <div className="prose prose-slate max-w-none prose-headings:font-bold prose-h1:text-3xl prose-h2:text-2xl prose-p:text-slate-600 prose-li:text-slate-600 whitespace-pre-wrap">
+                <ReactMarkdown
+                  components={{
+                    h1: ({ children }) => {
+                      const text = String(children);
+                      const phoneticMatch = text.match(/^(.*?)\s(\/.*\/)$/);
+                      if (phoneticMatch) {
+                        return (
+                          <h1 className="mb-2 flex items-baseline gap-2">
+                            <span className="text-2xl font-bold">{phoneticMatch[1]}</span>
+                            <span className="text-base font-normal text-slate-500">{phoneticMatch[2]}</span>
+                          </h1>
+                        );
+                      }
+                      return <h1 className="text-2xl font-bold mb-2">{children}</h1>;
+                    }
                   }}
                 >
-                  {result.split('\n').map((line, index) => (
-                    <motion.div
-                      key={index}
-                      variants={{
-                        hidden: { opacity: 0, y: 10 },
-                        visible: { opacity: 1, y: 0 },
-                      }}
-                      className="min-h-[1.5em]"
-                    >
-                      <ReactMarkdown
-                        components={{
-                          h1: ({ children }) => {
-                            const text = String(children);
-                            const phoneticMatch = text.match(/^(.*?)\s(\/.*\/)$/);
-                            if (phoneticMatch) {
-                              return (
-                                <h1 className="mb-2 flex items-baseline gap-2">
-                                  <span className="text-2xl font-bold">{phoneticMatch[1]}</span>
-                                  <span className="text-base font-normal text-slate-500">{phoneticMatch[2]}</span>
-                                </h1>
-                              );
-                            }
-                            return <h1 className="text-2xl font-bold mb-2">{children}</h1>;
-                          },
-                          p: ({ children }) => <p className="mb-1">{children}</p>
-                        }}
-                      >
-                        {line || '&nbsp;'}
-                      </ReactMarkdown>
-                    </motion.div>
-                  ))}
-                </motion.div>
+                  {result}
+                </ReactMarkdown>
               </div>
 
             </motion.div>
