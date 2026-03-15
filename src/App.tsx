@@ -10,7 +10,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import ReactMarkdown from 'react-markdown';
 
 // Khởi tạo Gemini AI (Sẽ được khởi tạo lại trong hàm nếu dùng API riêng)
-const DEFAULT_API_KEY = process.env.GEMINI_API_KEY || '';
+const DEFAULT_API_KEY = process.env.GEMINI_API_KEY || 'AIzaSyBbGoRRextkXttWJNKxj9DwYa1QgyaDpp8';
 
 // Prompt cơ sở - Người dùng có thể tùy chỉnh ở đây
 const BASE_PROMPT = `Soạn bài tập dạng Dictionary giống đề tuyển sinh lớp 10 TP.HCM (câu 35–36).
@@ -131,7 +131,12 @@ export default function App() {
             <div className="bg-emerald-500 p-2 rounded-xl">
               <BookOpen className="w-6 h-6 text-white" />
             </div>
-            <h1 className="text-xl font-bold tracking-tight">Dictionary Entry Generator</h1>
+            <div className="flex flex-col">
+              <h1 className="text-xl font-bold tracking-tight">Dictionary Entry Generator</h1>
+              <p className="text-[10px] text-slate-400 font-medium -mt-1">
+                by Nhân Nhân - Tung Thien Vuong Secondary School
+              </p>
+            </div>
           </div>
           <div className="flex items-center gap-4">
             <div className="hidden md:block text-xs font-mono text-slate-400 uppercase tracking-widest">
