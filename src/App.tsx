@@ -14,7 +14,7 @@ import { saveAs } from 'file-saver';
 // Translations
 const translations = {
   vi: {
-    title: "SOẠN TỪ ĐIỂN v1.1",
+    title: "SOẠN TỪ ĐIỂN v1.2",
     author: "by Nhân Nhân - Trường THCS Tùng Thiện Vương, phường Phú Định, TPHCM",
     poweredBy: "Powered by Gemini",
     apiSettings: "Cấu hình API Gemini",
@@ -72,7 +72,11 @@ const translations = {
 };
 
 // Khởi tạo Gemini AI
-const DEFAULT_API_KEY = import.meta.env.VITE_GEMINI_API_KEY || '';
+// Thử lấy từ nhiều nguồn khác nhau để đảm bảo tính tương thích
+const DEFAULT_API_KEY = 
+  import.meta.env.VITE_GEMINI_API_KEY || 
+  (window as any).process?.env?.GEMINI_API_KEY || 
+  '';
 
 // Prompt cơ sở - Người dùng có thể tùy chỉnh ở đây
 const BASE_PROMPT = `Soạn bài tập dạng Dictionary giống đề tuyển sinh lớp 10 TP.HCM (câu 35–36).
