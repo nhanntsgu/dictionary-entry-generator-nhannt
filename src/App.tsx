@@ -14,7 +14,7 @@ import { saveAs } from 'file-saver';
 // Translations
 const translations = {
   vi: {
-    title: "SOẠN TỪ ĐIỂN v1.0",
+    title: "SOẠN TỪ ĐIỂN v1.5",
     author: "by Nhân Nhân - Trường THCS Tùng Thiện Vương, phường Phú Định, TPHCM",
     poweredBy: "Powered by Gemini",
     apiSettings: "Cấu hình API Gemini",
@@ -39,10 +39,13 @@ const translations = {
     exportBtn: "Tải file Word",
     emptyState: "Nhập từ khóa để bắt đầu",
     settingsTitle: "Cấu hình",
+    modelLabel: "Lựa chọn Model",
+    modelFlash: "Gemini 3 Flash (Nhanh)",
+    modelLite: "Gemini 2.5 Flash Lite (Tiết kiệm)",
     appDescription: "Hỗ trợ soạn bài tập dạng Từ điển (Definition Entry) chuẩn đề thi Tuyển sinh lớp 10 tại TP.HCM (Câu 35, 36). Thầy cô chỉ cần gõ từ khóa (cách nhau dấu phẩy), bấm Tạo thì sẽ nhận được bài hoàn chỉnh, có thể copy trực tiếp hoặc xuất file Word để sử dụng. Cảm ơn thầy cô đã sử dụng app! Mọi đóng góp xin gửi về email nhanntsgu@gmail.com.",
   },
   en: {
-    title: "DICTIONARY ENTRY GENERATOR v1.0",
+    title: "DICTIONARY ENTRY GENERATOR v1.5",
     author: "by Nhan Nhan - Tung Thien Vuong Secondary School, Ho Chi Minh City",
     poweredBy: "Powered by Gemini",
     apiSettings: "Gemini API Configuration",
@@ -67,6 +70,9 @@ const translations = {
     exportBtn: "Download Word",
     emptyState: "Enter a keyword to start",
     settingsTitle: "Settings",
+    modelLabel: "Model Selection",
+    modelFlash: "Gemini 3 Flash (Fast)",
+    modelLite: "Gemini 2.5 Flash Lite (Lite)",
     appDescription: "Supports creating Dictionary Entry exercises standard for the Grade 10 Entrance Exam in Ho Chi Minh City (Questions 35, 36). Teachers just need to type keywords (separated by commas), click Generate to receive a complete lesson, which can be copied directly or exported to a Word file for use. Thank you for using the app! Please send any feedback to email nhanntsgu@gmail.com.",
   }
 };
@@ -161,6 +167,7 @@ export default function App() {
   });
   const [copySuccess, setCopySuccess] = useState(false);
   const [lang, setLang] = useState<'vi' | 'en'>('vi');
+  const [selectedModel, setSelectedModel] = useState<'gemini-3-flash-preview' | 'gemini-3.1-flash-lite-preview'>('gemini-3-flash-preview');
 
   const t = translations[lang];
 
@@ -268,13 +275,17 @@ export default function App() {
     setError('');
     setResult('');
 
-    try {
+    const tryGenerate = async (modelName: string) => {
       const ai = new GoogleGenAI({ apiKey });
       const response = await ai.models.generateContent({
-        model: "gemini-3-flash-preview",
+        model: modelName,
         contents: `${BASE_PROMPT} ${keyword}`,
       });
-      const text = response.text;
+      return response.text;
+    };
+
+    try {
+      let text = await tryGenerate(selectedModel);
       
       if (text) {
         setResult(text);
@@ -283,7 +294,23 @@ export default function App() {
       }
     } catch (err: any) {
       console.error(err);
-      if (err?.message?.includes('429')) {
+      const isQuotaError = err?.message?.includes('429') || err?.message?.toLowerCase().includes('quota');
+      
+      if (isQuotaError && selectedModel === 'gemini-3-flash-preview') {
+        // Fallback to Lite model if Flash fails due to quota
+        try {
+          console.log("Flash quota exceeded, falling back to Lite...");
+          let text = await tryGenerate('gemini-3.1-flash-lite-preview');
+          if (text) {
+            setResult(text);
+            return;
+          }
+        } catch (fallbackErr) {
+          console.error("Fallback failed:", fallbackErr);
+        }
+      }
+
+      if (isQuotaError) {
         setError("Hạn mức API đã hết (Rate Limit). Vui lòng đợi 1 phút hoặc đổi API Key khác.");
       } else {
         setError(t.errorConnect);
@@ -467,6 +494,55 @@ export default function App() {
                       </p>
                     </div>
                   )}
+
+                  <div className="pt-2 border-t border-slate-100">
+                    <label className="block text-[10px] font-bold text-slate-400 uppercase mb-3">
+                      {t.modelLabel}
+                    </label>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      <button
+                        onClick={() => setSelectedModel('gemini-3-flash-preview')}
+                        className={`flex items-center gap-3 p-3 rounded-xl border transition-all text-left ${
+                          selectedModel === 'gemini-3-flash-preview'
+                            ? 'bg-blue-50 border-blue-200 ring-1 ring-blue-200'
+                            : 'bg-white border-slate-200 hover:border-blue-200'
+                        }`}
+                      >
+                        <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${
+                          selectedModel === 'gemini-3-flash-preview' ? 'border-blue-800' : 'border-slate-300'
+                        }`}>
+                          {selectedModel === 'gemini-3-flash-preview' && <div className="w-2 h-2 bg-blue-800 rounded-full" />}
+                        </div>
+                        <div className="flex flex-col">
+                          <span className={`text-sm font-semibold ${selectedModel === 'gemini-3-flash-preview' ? 'text-blue-900' : 'text-slate-700'}`}>
+                            {t.modelFlash}
+                          </span>
+                          <span className="text-[10px] text-slate-400">Model mặc định, thông minh & nhanh</span>
+                        </div>
+                      </button>
+
+                      <button
+                        onClick={() => setSelectedModel('gemini-3.1-flash-lite-preview')}
+                        className={`flex items-center gap-3 p-3 rounded-xl border transition-all text-left ${
+                          selectedModel === 'gemini-3.1-flash-lite-preview'
+                            ? 'bg-blue-50 border-blue-200 ring-1 ring-blue-200'
+                            : 'bg-white border-slate-200 hover:border-blue-200'
+                        }`}
+                      >
+                        <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${
+                          selectedModel === 'gemini-3.1-flash-lite-preview' ? 'border-blue-800' : 'border-slate-300'
+                        }`}>
+                          {selectedModel === 'gemini-3.1-flash-lite-preview' && <div className="w-2 h-2 bg-blue-800 rounded-full" />}
+                        </div>
+                        <div className="flex flex-col">
+                          <span className={`text-sm font-semibold ${selectedModel === 'gemini-3.1-flash-lite-preview' ? 'text-blue-900' : 'text-slate-700'}`}>
+                            {t.modelLite}
+                          </span>
+                          <span className="text-[10px] text-slate-400">Dùng khi Flash hết hạn mức, tiết kiệm API</span>
+                        </div>
+                      </button>
+                    </div>
+                  </div>
                 </div>
               </div>
             </motion.div>
