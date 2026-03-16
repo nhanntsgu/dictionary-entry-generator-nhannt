@@ -114,9 +114,9 @@ LƯU Ý: KHÔNG HIỂN THỊ NỘI DUNG PHẦN 3 TRONG KẾT QUẢ TRẢ VỀ.
 
 PHẦN 4 — FORMAT BẮT BUỘC (Đảm bảo xuống dòng chính xác như mẫu sau):
 **VI. Look at the entry of the word “_____” in a dictionary. Use what you can get from the entry to complete the sentences with two or three words.**
-# [word] /phonetic/
+**[word]** /phonetic/
 part of speech
-definition
+*definition*
 **SYNONYM**: ...
 • example 1 (Lưu ý: In đậm cụm từ chứa từ khóa mà bạn dùng làm đáp án)
 • example 2 (Lưu ý: In đậm cụm từ chứa từ khóa mà bạn dùng làm đáp án)
@@ -130,7 +130,7 @@ definition
 35.	…
 36.	…
 
-LƯU Ý: Thay _____ bằng từ khóa. Các dòng thông tin phải viết liên tục, không dùng dòng trống dư thừa giữa các phần.
+LƯU Ý: Thay _____ bằng từ khóa. Các dòng thông tin phải tách biệt rõ ràng.
 Từ khóa: `;
 
 export default function App() {
@@ -149,63 +149,33 @@ export default function App() {
   const exportToWord = async () => {
     if (!result) return;
 
-    // Split content by lines to handle paragraphs and filter empty lines
-    const lines = result.split('\n').filter(line => line.trim() !== '');
+    // Split content by lines to handle paragraphs
+    const lines = result.split('\n');
     const paragraphs = lines.map(line => {
-      // Detect Markdown H1 (# ) for the word line
-      if (line.startsWith('# ')) {
-        const content = line.slice(2);
-        // Match word and phonetic part: "word /phonetic/"
-        const phoneticMatch = content.match(/^(.*?)\s(\/.*\/)$/);
-        
-        if (phoneticMatch) {
-          const word = phoneticMatch[1];
-          const phonetic = phoneticMatch[2];
-          return new Paragraph({
-            children: [
-              new TextRun({
-                text: word,
-                bold: true,
-                font: "Times New Roman",
-                size: 36, // 18pt
-              }),
-              new TextRun({
-                text: ' ' + phonetic,
-                font: "Times New Roman",
-                size: 24, // 12pt
-              }),
-            ],
-            spacing: {
-              line: 276,
-            },
-          });
-        }
-      }
-
-      let isHeader = false;
-      let cleanLine = line;
+      // Simple Markdown parser for Word export (handles **bold** and *italic*)
+      const parts = line.split(/(\*\*.*?\*\*|\*.*?\*)/g);
       
-      if (line.startsWith('# ')) {
-        isHeader = true;
-        cleanLine = line.slice(2);
-      }
-
-      // Simple bold detection (Markdown **)
-      const parts = cleanLine.split(/(\*\*.*?\*\*)/g);
       const children = parts.map(part => {
         if (part.startsWith('**') && part.endsWith('**')) {
           return new TextRun({
             text: part.slice(2, -2),
             bold: true,
             font: "Times New Roman",
-            size: isHeader ? 36 : 24,
+            size: 24, // 12pt
+          });
+        }
+        if (part.startsWith('*') && part.endsWith('*')) {
+          return new TextRun({
+            text: part.slice(1, -1),
+            italics: true,
+            font: "Times New Roman",
+            size: 24, // 12pt
           });
         }
         return new TextRun({
           text: part,
-          bold: isHeader,
           font: "Times New Roman",
-          size: isHeader ? 36 : 24,
+          size: 24, // 12pt
         });
       });
 
@@ -232,13 +202,14 @@ export default function App() {
     if (!result) return;
 
     try {
-      // Convert Markdown bold to HTML bold for rich text clipboard
+      // Convert Markdown bold and italic to HTML for rich text clipboard
       const htmlContent = result
         .replace(/\*\*(.*?)\*\*/g, '<b>$1</b>')
+        .replace(/\*(.*?)\*/g, '<i>$1</i>')
         .replace(/\n/g, '<br>');
       
       const blobHtml = new Blob([htmlContent], { type: 'text/html' });
-      const blobText = new Blob([result.replace(/\*\*/g, '')], { type: 'text/plain' });
+      const blobText = new Blob([result.replace(/\*\*/g, '').replace(/\*/g, '')], { type: 'text/plain' });
       
       const data = [new ClipboardItem({
         'text/html': blobHtml,
@@ -250,7 +221,7 @@ export default function App() {
       setTimeout(() => setCopySuccess(false), 2000);
     } catch (err) {
       // Fallback to plain text if rich text fails
-      await navigator.clipboard.writeText(result.replace(/\*\*/g, ''));
+      await navigator.clipboard.writeText(result.replace(/\*\*/g, '').replace(/\*/g, ''));
       setCopySuccess(true);
       setTimeout(() => setCopySuccess(false), 2000);
     }
@@ -282,9 +253,7 @@ export default function App() {
       const text = response.text;
       
       if (text) {
-        // Remove multiple consecutive newlines and trim
-        const cleanedText = text.replace(/\n\s*\n/g, '\n').trim();
-        setResult(cleanedText);
+        setResult(text);
       } else {
         setError(t.errorFailed);
       }
@@ -297,7 +266,7 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen bg-[#f5f5f5] text-slate-900 font-sans selection:bg-emerald-100">
+    <div className="min-h-screen bg-[#f5f5f5] text-slate-900 font-sans selection:bg-blue-100">
       {/* Header */}
       <header className="bg-white border-b border-black/5 py-6 px-4 sticky top-0 z-10 shadow-sm">
         <div className="max-w-4xl mx-auto flex items-center justify-between">
@@ -313,7 +282,7 @@ export default function App() {
                 const parent = e.currentTarget.parentElement;
                 if (parent) {
                   const icon = document.createElement('div');
-                  icon.className = "bg-emerald-500 p-2 rounded-xl";
+                  icon.className = "bg-blue-800 p-2 rounded-xl";
                   icon.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-book-open w-6 h-6 text-white"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>';
                   parent.insertBefore(icon, parent.firstChild);
                 }
@@ -333,20 +302,20 @@ export default function App() {
             <div className="flex items-center bg-slate-100 rounded-full p-1">
               <button
                 onClick={() => setLang('vi')}
-                className={`px-3 py-1 rounded-full text-[10px] font-bold transition-all ${lang === 'vi' ? 'bg-white text-emerald-600 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
+                className={`px-3 py-1 rounded-full text-[10px] font-bold transition-all ${lang === 'vi' ? 'bg-white text-blue-800 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
               >
                 VI
               </button>
               <button
                 onClick={() => setLang('en')}
-                className={`px-3 py-1 rounded-full text-[10px] font-bold transition-all ${lang === 'en' ? 'bg-white text-emerald-600 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
+                className={`px-3 py-1 rounded-full text-[10px] font-bold transition-all ${lang === 'en' ? 'bg-white text-blue-800 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
               >
                 EN
               </button>
             </div>
             <button
               onClick={() => setShowSettings(!showSettings)}
-              className={`p-2 hover:bg-slate-100 rounded-full transition-colors ${showSettings ? 'text-emerald-500 bg-emerald-50' : 'text-slate-500'}`}
+              className={`p-2 hover:bg-slate-100 rounded-full transition-colors ${showSettings ? 'text-blue-800 bg-blue-50' : 'text-slate-500'}`}
               title={t.settingsTitle}
             >
               <Settings className={`w-5 h-5 ${showSettings ? 'rotate-90' : ''} transition-transform duration-300`} />
@@ -368,7 +337,7 @@ export default function App() {
               <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="text-sm font-semibold text-slate-900 flex items-center gap-2">
-                    <Key className="w-4 h-4 text-emerald-500" />
+                    <Key className="w-4 h-4 text-blue-800" />
                     {t.apiSettings}
                   </h3>
                   <button 
@@ -385,7 +354,7 @@ export default function App() {
                       onClick={() => setApiMode('default')}
                       className={`flex-1 flex items-center justify-center gap-2 py-2 px-4 rounded-lg text-sm font-medium transition-all ${
                         apiMode === 'default' 
-                          ? 'bg-white text-emerald-600 shadow-sm' 
+                          ? 'bg-white text-blue-800 shadow-sm' 
                           : 'text-slate-500 hover:text-slate-700'
                       }`}
                     >
@@ -396,7 +365,7 @@ export default function App() {
                       onClick={() => setApiMode('custom')}
                       className={`flex-1 flex items-center justify-center gap-2 py-2 px-4 rounded-lg text-sm font-medium transition-all ${
                         apiMode === 'custom' 
-                          ? 'bg-white text-emerald-600 shadow-sm' 
+                          ? 'bg-white text-blue-800 shadow-sm' 
                           : 'text-slate-500 hover:text-slate-700'
                       }`}
                     >
@@ -415,7 +384,7 @@ export default function App() {
                         value={customApiKey}
                         onChange={(e) => setCustomApiKey(e.target.value)}
                         placeholder={t.apiPlaceholder}
-                        className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none transition-all text-sm"
+                        className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-800 focus:border-transparent outline-none transition-all text-sm"
                       />
                       <p className="mt-2 text-[11px] text-slate-400">
                         {t.apiNote}
@@ -424,9 +393,9 @@ export default function App() {
                   )}
 
                   {apiMode === 'default' && (
-                    <div className="bg-emerald-50 border border-emerald-100 rounded-xl p-3 flex items-start gap-3">
-                      <ShieldCheck className="w-4 h-4 text-emerald-500 mt-0.5" />
-                      <p className="text-xs text-emerald-700 leading-relaxed">
+                    <div className="bg-blue-50 border border-blue-100 rounded-xl p-3 flex items-start gap-3">
+                      <ShieldCheck className="w-4 h-4 text-blue-800 mt-0.5" />
+                      <p className="text-xs text-blue-900 leading-relaxed">
                         {t.apiDefaultNote}
                       </p>
                     </div>
@@ -456,7 +425,7 @@ export default function App() {
                   onChange={(e) => setKeyword(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && generateExercise()}
                   placeholder={t.keywordPlaceholder}
-                  className="w-full pl-4 pr-20 py-4 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none transition-all text-lg"
+                  className="w-full pl-4 pr-20 py-4 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-800 focus:border-transparent outline-none transition-all text-lg"
                 />
                 <div className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-2">
                   <AnimatePresence>
@@ -481,7 +450,7 @@ export default function App() {
             <button
               onClick={generateExercise}
               disabled={isLoading}
-              className="w-full bg-slate-900 hover:bg-slate-800 disabled:bg-slate-400 text-white font-medium py-4 rounded-xl flex items-center justify-center gap-2 transition-all shadow-lg active:scale-[0.98]"
+              className="w-full bg-blue-800 hover:bg-blue-900 disabled:bg-slate-400 text-white font-medium py-4 rounded-xl flex items-center justify-center gap-2 transition-all shadow-lg active:scale-[0.98]"
             >
               {isLoading ? (
                 <>
@@ -519,7 +488,7 @@ export default function App() {
             >
               <div className="flex items-center justify-between mb-6 pb-4 border-b border-slate-100">
                 <div className="flex items-center gap-2">
-                  <div className="w-2 h-8 bg-emerald-500 rounded-full"></div>
+                  <div className="w-2 h-8 bg-blue-800 rounded-full"></div>
                   <h2 className="text-2xl font-bold tracking-tight">{t.resultTitle}</h2>
                 </div>
                 <div className="flex items-center gap-2">
@@ -527,12 +496,12 @@ export default function App() {
                     onClick={copyToClipboard}
                     className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-lg text-xs font-medium transition-all"
                   >
-                    {copySuccess ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
+                    {copySuccess ? <Check className="w-3.5 h-3.5 text-blue-800" /> : <Copy className="w-3.5 h-3.5" />}
                     {copySuccess ? t.copiedBtn : t.copyBtn}
                   </button>
                   <button
                     onClick={exportToWord}
-                    className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg text-xs font-medium transition-all shadow-sm"
+                    className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-800 hover:bg-blue-900 text-white rounded-lg text-xs font-medium transition-all shadow-sm"
                   >
                     <FileDown className="w-3.5 h-3.5" />
                     {t.exportBtn}
