@@ -144,6 +144,8 @@ export default function App() {
   const [error, setError] = useState('');
   const [apiMode, setApiMode] = useState<'default' | 'custom'>(() => {
     const savedKey = localStorage.getItem('gemini_api_key');
+    // Nếu có API mặc định từ hệ thống, ưu tiên dùng nó trừ khi người dùng đã có key riêng hợp lệ
+    if (DEFAULT_API_KEY && !savedKey) return 'default';
     if (savedKey) return 'custom';
     return DEFAULT_API_KEY ? 'default' : 'custom';
   });
@@ -151,8 +153,10 @@ export default function App() {
     return localStorage.getItem('gemini_api_key') || '';
   });
   const [showSettings, setShowSettings] = useState(() => {
-    const hasKey = localStorage.getItem('gemini_api_key') || DEFAULT_API_KEY;
-    return !hasKey;
+    // Chỉ hiện cài đặt nếu cả 2 nguồn API đều trống
+    const hasDefault = !!DEFAULT_API_KEY;
+    const hasCustom = !!localStorage.getItem('gemini_api_key');
+    return !(hasDefault || hasCustom);
   });
   const [copySuccess, setCopySuccess] = useState(false);
   const [lang, setLang] = useState<'vi' | 'en'>('vi');
@@ -446,10 +450,20 @@ export default function App() {
                   )}
 
                   {apiMode === 'default' && (
-                    <div className="bg-blue-50 border border-blue-100 rounded-xl p-3 flex items-start gap-3">
-                      <ShieldCheck className="w-4 h-4 text-blue-800 mt-0.5" />
-                      <p className="text-xs text-blue-900 leading-relaxed">
-                        {t.apiDefaultNote}
+                    <div className={`rounded-xl p-3 flex items-start gap-3 border ${
+                      DEFAULT_API_KEY 
+                        ? 'bg-blue-50 border-blue-100' 
+                        : 'bg-amber-50 border-amber-100'
+                    }`}>
+                      <ShieldCheck className={`w-4 h-4 mt-0.5 ${
+                        DEFAULT_API_KEY ? 'text-blue-800' : 'text-amber-800'
+                      }`} />
+                      <p className={`text-xs leading-relaxed ${
+                        DEFAULT_API_KEY ? 'text-blue-900' : 'text-amber-900'
+                      }`}>
+                        {DEFAULT_API_KEY 
+                          ? t.apiDefaultNote 
+                          : "⚠️ Chưa tìm thấy biến môi trường VITE_GEMINI_API_KEY. Vui lòng cấu hình trong Settings hoặc sử dụng API Riêng."}
                       </p>
                     </div>
                   )}
