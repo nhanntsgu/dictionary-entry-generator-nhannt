@@ -14,22 +14,18 @@ import { saveAs } from 'file-saver';
 // Translations
 const translations = {
   vi: {
-    title: "SOẠN TỪ ĐIỂN v1.5",
+    title: "SOẠN TỪ ĐIỂN v1.6",
     author: "by Nhân Nhân - Trường THCS Tùng Thiện Vương, phường Phú Định, TPHCM",
     poweredBy: "Powered by Gemini",
     apiSettings: "Cấu hình API Gemini",
-    apiDefault: "Sử dụng API Mặc định",
-    apiCustom: "Sử dụng API Riêng",
     apiCustomLabel: "Nhập Gemini API Key",
     apiPlaceholder: "Dán API Key của bạn vào đây...",
     apiNote: "* API Key được lưu an toàn trong trình duyệt của bạn để sử dụng cho lần sau.",
-    apiDefaultNote: "Đang sử dụng API mặc định được cấu hình trong hệ thống.",
     keywordLabel: "Từ khóa",
     keywordPlaceholder: "Ví dụ: benefit, information, aware...",
     generateBtn: "Tạo",
     generatingBtn: "Đang tạo...",
     errorEmpty: "Vui lòng nhập từ khóa!",
-    errorNoDefaultApi: "API mặc định chưa được cấu hình.",
     errorNoCustomApi: "Vui lòng nhập API Key của bạn!",
     errorFailed: "Không thể tạo nội dung. Vui lòng thử lại.",
     errorConnect: "Đã xảy ra lỗi khi kết nối với AI. Vui lòng kiểm tra lại.",
@@ -45,22 +41,18 @@ const translations = {
     appDescription: "Hỗ trợ soạn bài tập dạng Từ điển (Definition Entry) chuẩn đề thi Tuyển sinh lớp 10 tại TP.HCM (Câu 35, 36). Thầy cô chỉ cần gõ từ khóa (cách nhau dấu phẩy), bấm Tạo thì sẽ nhận được bài hoàn chỉnh, có thể copy trực tiếp hoặc xuất file Word để sử dụng. Cảm ơn thầy cô đã sử dụng app! Mọi đóng góp xin gửi về email nhanntsgu@gmail.com.",
   },
   en: {
-    title: "DICTIONARY ENTRY GENERATOR v1.5",
+    title: "DICTIONARY ENTRY GENERATOR v1.6",
     author: "by Nhan Nhan - Tung Thien Vuong Secondary School, Ho Chi Minh City",
     poweredBy: "Powered by Gemini",
     apiSettings: "Gemini API Configuration",
-    apiDefault: "Use Default API",
-    apiCustom: "Use Custom API",
     apiCustomLabel: "Enter Gemini API Key",
     apiPlaceholder: "Paste your API Key here...",
     apiNote: "* Your API Key is saved securely in your browser for future use.",
-    apiDefaultNote: "Using the default API configured in the system.",
     keywordLabel: "Keyword",
     keywordPlaceholder: "Example: benefit, information, aware...",
     generateBtn: "Generate",
     generatingBtn: "Generating...",
     errorEmpty: "Please enter a keyword!",
-    errorNoDefaultApi: "Default API is not configured.",
     errorNoCustomApi: "Please enter your API Key!",
     errorFailed: "Could not generate content. Please try again.",
     errorConnect: "An error occurred while connecting to AI. Please check again.",
@@ -76,10 +68,6 @@ const translations = {
     appDescription: "Supports creating Dictionary Entry exercises standard for the Grade 10 Entrance Exam in Ho Chi Minh City (Questions 35, 36). Teachers just need to type keywords (separated by commas), click Generate to receive a complete lesson, which can be copied directly or exported to a Word file for use. Thank you for using the app! Please send any feedback to email nhanntsgu@gmail.com.",
   }
 };
-
-// Khởi tạo Gemini AI
-// Vite sẽ thay thế process.env.GEMINI_API_KEY bằng giá trị thực tế khi build
-const DEFAULT_API_KEY = process.env.GEMINI_API_KEY || '';
 
 // Prompt cơ sở - Người dùng có thể tùy chỉnh ở đây
 const BASE_PROMPT = `Soạn bài tập dạng Dictionary giống đề tuyển sinh lớp 10 TP.HCM (câu 35–36).
@@ -149,21 +137,11 @@ export default function App() {
   const [result, setResult] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
-  const [apiMode, setApiMode] = useState<'default' | 'custom'>(() => {
-    const savedKey = localStorage.getItem('gemini_api_key');
-    // Nếu có API mặc định từ hệ thống, ưu tiên dùng nó trừ khi người dùng đã có key riêng hợp lệ
-    if (DEFAULT_API_KEY && !savedKey) return 'default';
-    if (savedKey) return 'custom';
-    return DEFAULT_API_KEY ? 'default' : 'custom';
-  });
   const [customApiKey, setCustomApiKey] = useState(() => {
     return localStorage.getItem('gemini_api_key') || '';
   });
   const [showSettings, setShowSettings] = useState(() => {
-    // Chỉ hiện cài đặt nếu cả 2 nguồn API đều trống
-    const hasDefault = !!DEFAULT_API_KEY;
-    const hasCustom = !!localStorage.getItem('gemini_api_key');
-    return !(hasDefault || hasCustom);
+    return !localStorage.getItem('gemini_api_key');
   });
   const [copySuccess, setCopySuccess] = useState(false);
   const [lang, setLang] = useState<'vi' | 'en'>('vi');
@@ -263,10 +241,8 @@ export default function App() {
       return;
     }
 
-    const apiKey = apiMode === 'custom' ? customApiKey : DEFAULT_API_KEY;
-
-    if (!apiKey) {
-      setError(apiMode === 'custom' ? t.errorNoCustomApi : t.errorNoDefaultApi);
+    if (!customApiKey) {
+      setError(t.errorNoCustomApi);
       setShowSettings(true);
       return;
     }
@@ -276,7 +252,7 @@ export default function App() {
     setResult('');
 
     const tryGenerate = async (modelName: string) => {
-      const ai = new GoogleGenAI({ apiKey });
+      const ai = new GoogleGenAI({ apiKey: customApiKey });
       const response = await ai.models.generateContent({
         model: modelName,
         contents: `${BASE_PROMPT} ${keyword}`,
@@ -311,7 +287,8 @@ export default function App() {
       }
 
       if (isQuotaError) {
-        setError("Hạn mức API đã hết (Rate Limit). Vui lòng đợi 1 phút hoặc đổi API Key khác.");
+        setError("Hạn mức API đã hết (Rate Limit). Vui lòng nhập API Key khác.");
+        setShowSettings(true);
       } else {
         setError(t.errorConnect);
       }
@@ -429,71 +406,24 @@ export default function App() {
                 </div>
                 
                 <div className="flex flex-col gap-4">
-                  <div className="flex p-1 bg-slate-100 rounded-xl">
-                    <button
-                      onClick={() => setApiMode('default')}
-                      disabled={!DEFAULT_API_KEY}
-                      className={`flex-1 flex items-center justify-center gap-2 py-2 px-4 rounded-lg text-sm font-medium transition-all ${
-                        apiMode === 'default' 
-                          ? 'bg-white text-blue-800 shadow-sm' 
-                          : 'text-slate-500 hover:text-slate-700 disabled:opacity-30'
-                      }`}
-                    >
-                      <ShieldCheck className="w-4 h-4" />
-                      {t.apiDefault}
-                    </button>
-                    <button
-                      onClick={() => setApiMode('custom')}
-                      className={`flex-1 flex items-center justify-center gap-2 py-2 px-4 rounded-lg text-sm font-medium transition-all ${
-                        apiMode === 'custom' 
-                          ? 'bg-white text-blue-800 shadow-sm' 
-                          : 'text-slate-500 hover:text-slate-700'
-                      }`}
-                    >
-                      <Key className="w-4 h-4" />
-                      {t.apiCustom}
-                    </button>
-                  </div>
-
-                  {apiMode === 'custom' && (
-                    <motion.div
-                      initial={{ opacity: 0, y: -10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                    >
-                      <label className="block text-[10px] font-bold text-slate-400 uppercase mb-2">
-                        {t.apiCustomLabel}
-                      </label>
-                      <input
-                        type="password"
-                        value={customApiKey}
-                        onChange={(e) => handleApiKeyChange(e.target.value)}
-                        placeholder={t.apiPlaceholder}
-                        className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-800 focus:border-transparent outline-none transition-all text-sm"
-                      />
-                      <p className="mt-2 text-[11px] text-slate-400">
-                        {t.apiNote}
-                      </p>
-                    </motion.div>
-                  )}
-
-                  {apiMode === 'default' && (
-                    <div className={`rounded-xl p-3 flex items-start gap-3 border ${
-                      DEFAULT_API_KEY 
-                        ? 'bg-blue-50 border-blue-100' 
-                        : 'bg-amber-50 border-amber-100'
-                    }`}>
-                      <ShieldCheck className={`w-4 h-4 mt-0.5 ${
-                        DEFAULT_API_KEY ? 'text-blue-800' : 'text-amber-800'
-                      }`} />
-                      <p className={`text-xs leading-relaxed ${
-                        DEFAULT_API_KEY ? 'text-blue-900' : 'text-amber-900'
-                      }`}>
-                        {DEFAULT_API_KEY 
-                          ? t.apiDefaultNote 
-                          : "⚠️ Hệ thống chưa nhận được API Key. Thầy cô vui lòng: 1. Kiểm tra biến VITE_GEMINI_API_KEY trong Settings. 2. Bấm Save. 3. Đợi 10 giây rồi tải lại trang (F5)."}
-                      </p>
-                    </div>
-                  )}
+                  <motion.div
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                  >
+                    <label className="block text-[10px] font-bold text-slate-400 uppercase mb-2">
+                      {t.apiCustomLabel}
+                    </label>
+                    <input
+                      type="password"
+                      value={customApiKey}
+                      onChange={(e) => handleApiKeyChange(e.target.value)}
+                      placeholder={t.apiPlaceholder}
+                      className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-800 focus:border-transparent outline-none transition-all text-sm"
+                    />
+                    <p className="mt-2 text-[11px] text-slate-400">
+                      {t.apiNote}
+                    </p>
+                  </motion.div>
 
                   <div className="pt-2 border-t border-slate-100">
                     <label className="block text-[10px] font-bold text-slate-400 uppercase mb-3">
