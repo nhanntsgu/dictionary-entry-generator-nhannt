@@ -18,11 +18,12 @@ const translations = {
     author: "by Nhân Nhân - Trường THCS Tùng Thiện Vương, phường Phú Định, TPHCM",
     poweredBy: "Powered by Gemini",
     apiSettings: "Cấu hình API Gemini",
-    apiDefault: "API Mặc định",
-    apiCustom: "API Riêng",
-    apiPlaceholder: "Nhập Gemini API Key của bạn...",
-    apiNote: "* API Key của bạn chỉ được lưu trong phiên làm việc này và không được gửi đi đâu khác ngoài Google Gemini.",
-    apiDefaultNote: "Đang sử dụng API hệ thống do nhà phát triển cung cấp. Khóa API này được ẩn an toàn và không hiển thị với người dùng.",
+    apiDefault: "Sử dụng API Mặc định",
+    apiCustom: "Sử dụng API Riêng",
+    apiCustomLabel: "Nhập Gemini API Key",
+    apiPlaceholder: "Dán API Key của bạn vào đây...",
+    apiNote: "* API Key được lưu an toàn trong trình duyệt của bạn để sử dụng cho lần sau.",
+    apiDefaultNote: "Đang sử dụng API mặc định được cấu hình trong hệ thống.",
     keywordLabel: "Từ khóa",
     keywordPlaceholder: "Ví dụ: benefit, information, aware...",
     generateBtn: "Tạo",
@@ -45,11 +46,12 @@ const translations = {
     author: "by Nhan Nhan - Tung Thien Vuong Secondary School, Ho Chi Minh City",
     poweredBy: "Powered by Gemini",
     apiSettings: "Gemini API Configuration",
-    apiDefault: "Default API",
-    apiCustom: "Custom API",
-    apiPlaceholder: "Enter your Gemini API Key...",
-    apiNote: "* Your API Key is only saved for this session and is not sent anywhere else except Google Gemini.",
-    apiDefaultNote: "Using the system API provided by the developer. This API key is securely hidden and not visible to users.",
+    apiDefault: "Use Default API",
+    apiCustom: "Use Custom API",
+    apiCustomLabel: "Enter Gemini API Key",
+    apiPlaceholder: "Paste your API Key here...",
+    apiNote: "* Your API Key is saved securely in your browser for future use.",
+    apiDefaultNote: "Using the default API configured in the system.",
     keywordLabel: "Keyword",
     keywordPlaceholder: "Example: benefit, information, aware...",
     generateBtn: "Generate",
@@ -70,7 +72,7 @@ const translations = {
 };
 
 // Khởi tạo Gemini AI
-const DEFAULT_API_KEY = process.env.GEMINI_API_KEY || '';
+const DEFAULT_API_KEY = import.meta.env.VITE_GEMINI_API_KEY || '';
 
 // Prompt cơ sở - Người dùng có thể tùy chỉnh ở đây
 const BASE_PROMPT = `Soạn bài tập dạng Dictionary giống đề tuyển sinh lớp 10 TP.HCM (câu 35–36).
@@ -140,13 +142,27 @@ export default function App() {
   const [result, setResult] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
-  const [apiMode, setApiMode] = useState<'default' | 'custom'>('default');
-  const [customApiKey, setCustomApiKey] = useState('');
-  const [showSettings, setShowSettings] = useState(false);
+  const [apiMode, setApiMode] = useState<'default' | 'custom'>(() => {
+    const savedKey = localStorage.getItem('gemini_api_key');
+    if (savedKey) return 'custom';
+    return DEFAULT_API_KEY ? 'default' : 'custom';
+  });
+  const [customApiKey, setCustomApiKey] = useState(() => {
+    return localStorage.getItem('gemini_api_key') || '';
+  });
+  const [showSettings, setShowSettings] = useState(() => {
+    const hasKey = localStorage.getItem('gemini_api_key') || DEFAULT_API_KEY;
+    return !hasKey;
+  });
   const [copySuccess, setCopySuccess] = useState(false);
   const [lang, setLang] = useState<'vi' | 'en'>('vi');
 
   const t = translations[lang];
+
+  const handleApiKeyChange = (value: string) => {
+    setCustomApiKey(value);
+    localStorage.setItem('gemini_api_key', value);
+  };
 
   const exportToWord = async () => {
     if (!result) return;
@@ -235,10 +251,11 @@ export default function App() {
       return;
     }
 
-    const apiKeyToUse = apiMode === 'default' ? DEFAULT_API_KEY : customApiKey;
-    
-    if (!apiKeyToUse) {
-      setError(apiMode === 'default' ? t.errorNoDefaultApi : t.errorNoCustomApi);
+    const apiKey = apiMode === 'custom' ? customApiKey : DEFAULT_API_KEY;
+
+    if (!apiKey) {
+      setError(apiMode === 'custom' ? t.errorNoCustomApi : t.errorNoDefaultApi);
+      setShowSettings(true);
       return;
     }
 
@@ -247,7 +264,7 @@ export default function App() {
     setResult('');
 
     try {
-      const ai = new GoogleGenAI({ apiKey: apiKeyToUse });
+      const ai = new GoogleGenAI({ apiKey });
       const response = await ai.models.generateContent({
         model: "gemini-3-flash-preview",
         contents: `${BASE_PROMPT} ${keyword}`,
@@ -259,9 +276,13 @@ export default function App() {
       } else {
         setError(t.errorFailed);
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
-      setError(t.errorConnect);
+      if (err?.message?.includes('429')) {
+        setError("Hạn mức API đã hết (Rate Limit). Vui lòng đợi 1 phút hoặc đổi API Key khác.");
+      } else {
+        setError(t.errorConnect);
+      }
     } finally {
       setIsLoading(false);
     }
@@ -380,10 +401,11 @@ export default function App() {
                   <div className="flex p-1 bg-slate-100 rounded-xl">
                     <button
                       onClick={() => setApiMode('default')}
+                      disabled={!DEFAULT_API_KEY}
                       className={`flex-1 flex items-center justify-center gap-2 py-2 px-4 rounded-lg text-sm font-medium transition-all ${
                         apiMode === 'default' 
                           ? 'bg-white text-blue-800 shadow-sm' 
-                          : 'text-slate-500 hover:text-slate-700'
+                          : 'text-slate-500 hover:text-slate-700 disabled:opacity-30'
                       }`}
                     >
                       <ShieldCheck className="w-4 h-4" />
@@ -407,10 +429,13 @@ export default function App() {
                       initial={{ opacity: 0, y: -10 }}
                       animate={{ opacity: 1, y: 0 }}
                     >
+                      <label className="block text-[10px] font-bold text-slate-400 uppercase mb-2">
+                        {t.apiCustomLabel}
+                      </label>
                       <input
                         type="password"
                         value={customApiKey}
-                        onChange={(e) => setCustomApiKey(e.target.value)}
+                        onChange={(e) => handleApiKeyChange(e.target.value)}
                         placeholder={t.apiPlaceholder}
                         className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-800 focus:border-transparent outline-none transition-all text-sm"
                       />
