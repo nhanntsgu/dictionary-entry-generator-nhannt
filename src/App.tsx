@@ -14,7 +14,7 @@ import { saveAs } from 'file-saver';
 // Translations
 const translations = {
   vi: {
-    title: "SOẠN TỪ ĐIỂN v2.7",
+    title: "SOẠN TỪ ĐIỂN v2.8",
     author: "by Nhân Nhân - Trường THCS Tùng Thiện Vương, phường Phú Định, TPHCM",
     poweredBy: "Powered by Gemini",
     apiSettings: "Cấu hình API Gemini",
@@ -49,7 +49,7 @@ const translations = {
     appDescription: "Hỗ trợ soạn bài tập dạng Từ điển (Definition Entry) chuẩn đề thi Tuyển sinh lớp 10 tại TP.HCM (Câu 35, 36). Thầy cô chỉ cần gõ từ khóa (cách nhau dấu phẩy), bấm Tạo thì sẽ nhận được bài hoàn chỉnh, có thể copy trực tiếp hoặc xuất file Word để sử dụng. Cảm ơn thầy cô đã sử dụng app! Mọi đóng góp xin gửi về email nhanntsgu@gmail.com.",
   },
   en: {
-    title: "DICTIONARY ENTRY GENERATOR v2.7",
+    title: "DICTIONARY ENTRY GENERATOR v2.8",
     author: "by Nhan Nhan - Tung Thien Vuong Secondary School, Ho Chi Minh City",
     poweredBy: "Powered by Gemini",
     apiSettings: "Gemini API Configuration",
@@ -94,18 +94,17 @@ YÊU CẦU VỀ NỘI DUNG:
 2. Examples: 5 câu ví dụ đơn giản, tự nhiên. Trong đó 4 câu đầu phải chứa cụm từ (2-3 từ) làm đáp án cho 4 câu hỏi bên dưới. In đậm cụm từ đó.
 3. Questions: 2 câu chính (35, 36) và 2 câu dự phòng (1, 2). Câu hỏi phải có ngữ cảnh khác ví dụ nhưng đáp án phải giữ nguyên văn từ ví dụ.
 
-YÊU CẦU VỀ ĐỊNH DẠNG (CỰC KỲ QUAN TRỌNG):
-- Sử dụng Markdown chuẩn.
-- BẮT BUỘC có 1 dấu cách sau ký tự # (Ví dụ: "# Word" chứ không phải "#Word").
-- KHÔNG được để các dòng dính sát nhau mà không có xuống dòng nếu chúng là các mục khác nhau.
-- Giữa các câu hỏi (35, 36, 1, 2) nên có 1 dòng trống để rõ ràng, nhưng không được để dư thừa quá nhiều dòng trống.
+YÊU CẦU VỀ ĐỊNH DẠNG (CỰC KỲ QUAN TRỌNG - ĐỂ COPY SANG WORD KHÔNG LỖI):
+- KHÔNG sử dụng dấu # hay ## cho tiêu đề.
+- Sử dụng **[Tiêu đề]** cho các phần như ANSWERS, ĐÁP ÁN, Câu dự phòng.
+- Giữa các phần và giữa các câu hỏi PHẢI có đúng 1 dòng trống (tương đương 1 lần nhấn Enter).
 - Tuyệt đối không để số thứ tự nằm riêng một dòng.
 - Đảm bảo mỗi dòng văn bản kết thúc bằng một dấu xuống dòng đơn giản.
 
-CẤU TRÚC MẪU BẮT BUỘC:
+CẤU TRÚC MẪU BẮT BUỘC (SAO CHÉP CHÍNH XÁC KHOẢNG TRỐNG):
 **VI. Look at the entry of the word “_____” in a dictionary. Use what you can get from the entry to complete the sentences with two or three words.**
 
-# [word] /[phonetic]/
+[word] /[phonetic]/
 *part of speech*
 *definition*
 **SYNONYM**: ...
@@ -116,23 +115,31 @@ CẤU TRÚC MẪU BẮT BUỘC:
 • example 4 (có **cụm đáp án dự phòng**)
 • example 5
 
-## ANSWERS
+**ANSWERS**
+
 35. [câu hỏi 35]
+
 36. [câu hỏi 36]
 
-## Câu dự phòng
+**Câu dự phòng**
+
 1. [câu hỏi dự phòng 1]
+
 2. [câu hỏi dự phòng 2]
 
-## ĐÁP ÁN
+**ĐÁP ÁN**
+
 35. [đáp án]
+
 36. [đáp án]
 
-## Câu dự phòng
+**Câu dự phòng**
+
 1. [đáp án]
+
 2. [đáp án]
 
-LƯU Ý: Thay _____ bằng từ khóa.
+LƯU Ý: Thay _____ bằng từ khóa. Đảm bảo khoảng trống giữa các dòng đúng như mẫu.
 Từ khóa: `;
 
 export default function App() {
@@ -176,15 +183,13 @@ export default function App() {
 
     const lines = result.split('\n');
     const paragraphs = lines.map(line => {
-      let cleanLine = line.trim();
-      let headingLevel: any = undefined;
-
-      if (cleanLine.startsWith('# ')) {
-        headingLevel = HeadingLevel.HEADING_1;
-        cleanLine = cleanLine.substring(2);
-      } else if (cleanLine.startsWith('## ')) {
-        headingLevel = HeadingLevel.HEADING_2;
-        cleanLine = cleanLine.substring(3);
+      const cleanLine = line.trim();
+      
+      if (cleanLine === '') {
+        return new Paragraph({
+          children: [new TextRun("")],
+          spacing: { after: 120 },
+        });
       }
 
       // Simple Markdown parser for Word export (handles **bold** and *italic*)
@@ -196,7 +201,7 @@ export default function App() {
             text: part.slice(2, -2),
             bold: true,
             font: "Times New Roman",
-            size: headingLevel ? 28 : 24, // 14pt for headings, 12pt for body
+            size: 24, // 12pt
           });
         }
         if (part.startsWith('*') && part.endsWith('*')) {
@@ -204,22 +209,19 @@ export default function App() {
             text: part.slice(1, -1),
             italics: true,
             font: "Times New Roman",
-            size: headingLevel ? 28 : 24,
+            size: 24,
           });
         }
         return new TextRun({
           text: part,
           font: "Times New Roman",
-          size: headingLevel ? 28 : 24,
+          size: 24,
         });
       });
 
       return new Paragraph({
         children,
-        heading: headingLevel,
         spacing: {
-          before: headingLevel ? 240 : 0,
-          after: headingLevel ? 120 : 120,
           line: 276,
         },
       });
@@ -246,23 +248,19 @@ export default function App() {
         .split('\n')
         .map(line => {
           const trimmedLine = line.trim();
-          if (line.startsWith('# ')) {
-            return `<h1 style="font-size: 16pt; font-family: 'Times New Roman'; margin-bottom: 0;">${line.substring(2)}</h1>`;
-          } else if (line.startsWith('## ')) {
-            return `<h2 style="font-size: 14pt; font-family: 'Times New Roman'; margin-top: 12pt; margin-bottom: 0;">${line.substring(3)}</h2>`;
-          } else if (trimmedLine === '') {
-            return '<p style="margin: 0; min-height: 1em;">&nbsp;</p>';
+          if (trimmedLine === '') {
+            return '<p style="margin: 0; min-height: 1.2em; font-family: \'Times New Roman\'; font-size: 12pt;">&nbsp;</p>';
           } else {
             let formattedLine = line
               .replace(/\*\*(.*?)\*\*/g, '<b>$1</b>')
               .replace(/\*(.*?)\*/g, '<i>$1</i>');
-            return `<p style="margin: 0; font-family: 'Times New Roman'; font-size: 12pt;">${formattedLine}</p>`;
+            return `<p style="margin: 0; font-family: 'Times New Roman'; font-size: 12pt; line-height: 1.2;">${formattedLine}</p>`;
           }
         })
         .join('');
       
       const blobHtml = new Blob([htmlContent], { type: 'text/html' });
-      const blobText = new Blob([result.replace(/^#+ /gm, '').replace(/\*\*/g, '').replace(/\*\*/g, '')], { type: 'text/plain' });
+      const blobText = new Blob([result.replace(/\*\*/g, '').replace(/\*/g, '')], { type: 'text/plain' });
       
       const data = [new ClipboardItem({
         'text/html': blobHtml,
@@ -274,7 +272,7 @@ export default function App() {
       setTimeout(() => setCopySuccess(false), 2000);
     } catch (err) {
       // Fallback to plain text if rich text fails
-      await navigator.clipboard.writeText(result.replace(/^#+ /gm, '').replace(/\*\*/g, '').replace(/\*/g, ''));
+      await navigator.clipboard.writeText(result.replace(/\*\*/g, '').replace(/\*/g, ''));
       setCopySuccess(true);
       setTimeout(() => setCopySuccess(false), 2000);
     }
@@ -692,34 +690,17 @@ export default function App() {
                 </div>
               </div>
               
-              <div className="prose prose-slate max-w-none prose-headings:m-0 prose-p:m-0 prose-li:m-0 whitespace-pre-wrap">
+              <div className="prose prose-slate max-w-none prose-headings:m-0 prose-p:m-0 prose-li:m-0 whitespace-pre-wrap font-serif">
                 <ReactMarkdown
                   components={{
-                    h1: ({ children }) => {
-                      const text = String(children);
-                      const phoneticMatch = text.match(/^(.*?)\s*(\/.*\/)$/);
-                      if (phoneticMatch) {
-                        return (
-                          <h1 className="mb-2 flex items-baseline gap-2 border-b-2 border-slate-200 pb-1 mt-0">
-                            <span className="text-2xl font-extrabold text-slate-900 tracking-tight">{phoneticMatch[1].trim()}</span>
-                            <span className="text-base font-medium text-slate-400 italic">{phoneticMatch[2]}</span>
-                          </h1>
-                        );
-                      }
-                      return <h1 className="text-2xl font-extrabold mb-2 border-b-2 border-slate-200 pb-1 mt-0 text-slate-900 tracking-tight">{children}</h1>;
-                    },
-                    h2: ({ children }) => (
-                      <h2 className="text-xs font-black text-slate-900 uppercase tracking-widest mb-2 mt-6 flex items-center gap-2 before:content-[''] before:w-1 before:h-3 before:bg-blue-600 before:rounded-full">
-                        {children}
-                      </h2>
-                    ),
-                    p: ({ children }) => <p className="text-slate-700 leading-snug mb-0.5 last:mb-0">{children}</p>,
+                    p: ({ children }) => <p className="text-slate-900 leading-snug mb-0.5 last:mb-0 text-base">{children}</p>,
                     ul: ({ children }) => <ul className="list-none pl-0 mb-2 space-y-0.5">{children}</ul>,
                     ol: ({ children }) => <ol className="list-none pl-0 mb-2 space-y-0.5">{children}</ol>,
-                    li: ({ children }) => <li className="text-slate-700 leading-snug mb-0.5 flex items-start gap-2">
+                    li: ({ children }) => <li className="text-slate-900 leading-snug mb-0.5 flex items-start gap-2">
                       <div className="flex-1">{children}</div>
                     </li>,
-                    strong: ({ children }) => <strong className="font-bold text-slate-900">{children}</strong>
+                    strong: ({ children }) => <strong className="font-bold text-slate-900">{children}</strong>,
+                    em: ({ children }) => <em className="italic text-slate-700">{children}</em>
                   }}
                 >
                   {result}
