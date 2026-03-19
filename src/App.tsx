@@ -14,10 +14,11 @@ import { saveAs } from 'file-saver';
 // Translations
 const translations = {
   vi: {
-    title: "SOẠN TỪ ĐIỂN v1.6",
+    title: "SOẠN TỪ ĐIỂN v1.9",
     author: "by Nhân Nhân - Trường THCS Tùng Thiện Vương, phường Phú Định, TPHCM",
     poweredBy: "Powered by Gemini",
     apiSettings: "Cấu hình API Gemini",
+    apiGuide: "Hướng dẫn lấy API key miễn phí",
     apiCustomLabel: "Nhập Gemini API Key",
     apiPlaceholder: "Dán API Key của bạn vào đây...",
     apiNote: "* API Key được lưu an toàn trong trình duyệt của bạn để sử dụng cho lần sau.",
@@ -41,10 +42,11 @@ const translations = {
     appDescription: "Hỗ trợ soạn bài tập dạng Từ điển (Definition Entry) chuẩn đề thi Tuyển sinh lớp 10 tại TP.HCM (Câu 35, 36). Thầy cô chỉ cần gõ từ khóa (cách nhau dấu phẩy), bấm Tạo thì sẽ nhận được bài hoàn chỉnh, có thể copy trực tiếp hoặc xuất file Word để sử dụng. Cảm ơn thầy cô đã sử dụng app! Mọi đóng góp xin gửi về email nhanntsgu@gmail.com.",
   },
   en: {
-    title: "DICTIONARY ENTRY GENERATOR v1.6",
+    title: "DICTIONARY ENTRY GENERATOR v1.9",
     author: "by Nhan Nhan - Tung Thien Vuong Secondary School, Ho Chi Minh City",
     poweredBy: "Powered by Gemini",
     apiSettings: "Gemini API Configuration",
+    apiGuide: "How to get a free API key",
     apiCustomLabel: "Enter Gemini API Key",
     apiPlaceholder: "Paste your API Key here...",
     apiNote: "* Your API Key is saved securely in your browser for future use.",
@@ -75,7 +77,8 @@ Tôi sẽ cung cấp các từ khóa tiếng Anh.
 Nhiệm vụ:
 Với mỗi từ khóa, tạo:
 • 1 dictionary entry
-• 2 câu hỏi điền khuyết (câu 35 và 36)
+• 2 câu hỏi điền khuyết chính (câu 35 và 36)
+• 2 câu hỏi dự phòng (Câu dự phòng 1 và 2)
 PHẦN 1 — DICTIONARY ENTRY
 Dictionary entry phải gồm:
 word
@@ -90,12 +93,15 @@ Yêu cầu example:
 • mỗi câu nên chứa 1 cụm từ có thể dùng làm đáp án
 • cụm đó dài 2–3 từ
 PHẦN 2 — TẠO CÂU HỎI
-Tạo 2 câu hỏi điền khuyết:
+Tạo 2 câu hỏi điền khuyết chính và 2 câu dự phòng:
 ANSWERS
 35.	
 36.	
+Câu dự phòng
+1.
+2.
 Quy tắc bắt buộc:
-1.	Mỗi câu phải lấy chính xác một cụm 2–3 từ từ example sentences.
+1.	Mỗi câu (kể cả dự phòng) phải lấy chính xác một cụm 2–3 từ từ example sentences.
 2.	Không được thay đổi dạng từ.
 3.	Đáp án phải xuất hiện nguyên văn trong example. Đáp án phải có chứa từ khóa.
 4.	Câu hỏi phải viết ngữ cảnh khác example để học sinh suy luận.
@@ -119,15 +125,21 @@ part of speech
 **SYNONYM**: ...
 • example 1 (Lưu ý: In đậm cụm từ chứa từ khóa mà bạn dùng làm đáp án)
 • example 2 (Lưu ý: In đậm cụm từ chứa từ khóa mà bạn dùng làm đáp án)
-• example 3
-• example 4
+• example 3 (Lưu ý: In đậm cụm từ chứa từ khóa mà bạn dùng làm đáp án dự phòng)
+• example 4 (Lưu ý: In đậm cụm từ chứa từ khóa mà bạn dùng làm đáp án dự phòng)
 • example 5
 **ANSWERS**
 35.	
 36.	
+**Câu dự phòng**
+1.
+2.
 **ĐÁP ÁN**
 35.	…
 36.	…
+**Câu dự phòng**
+1.
+2.
 
 LƯU Ý: Thay _____ bằng từ khóa. Các dòng thông tin phải tách biệt rõ ràng.
 Từ khóa: `;
@@ -382,100 +394,127 @@ export default function App() {
           </div>
         </motion.div>
 
-        {/* API Settings Panel */}
+        {/* API Settings Modal */}
         <AnimatePresence>
           {showSettings && (
-            <motion.div
-              initial={{ height: 0, opacity: 0, marginBottom: 0 }}
-              animate={{ height: 'auto', opacity: 1, marginBottom: 32 }}
-              exit={{ height: 0, opacity: 0, marginBottom: 0 }}
-              className="overflow-hidden"
-            >
-              <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-sm font-semibold text-slate-900 flex items-center gap-2">
-                    <Key className="w-4 h-4 text-blue-800" />
-                    {t.apiSettings}
-                  </h3>
-                  <button 
-                    onClick={() => setShowSettings(false)}
-                    className="text-slate-400 hover:text-slate-600"
-                  >
-                    <X className="w-4 h-4" />
-                  </button>
-                </div>
-                
-                <div className="flex flex-col gap-4">
-                  <motion.div
-                    initial={{ opacity: 0, y: -10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                  >
-                    <label className="block text-[10px] font-bold text-slate-400 uppercase mb-2">
-                      {t.apiCustomLabel}
-                    </label>
-                    <input
-                      type="password"
-                      value={customApiKey}
-                      onChange={(e) => handleApiKeyChange(e.target.value)}
-                      placeholder={t.apiPlaceholder}
-                      className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-800 focus:border-transparent outline-none transition-all text-sm"
-                    />
-                    <p className="mt-2 text-[11px] text-slate-400">
-                      {t.apiNote}
-                    </p>
-                  </motion.div>
-
-                  <div className="pt-2 border-t border-slate-100">
-                    <label className="block text-[10px] font-bold text-slate-400 uppercase mb-3">
-                      {t.modelLabel}
-                    </label>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                      <button
-                        onClick={() => setSelectedModel('gemini-3-flash-preview')}
-                        className={`flex items-center gap-3 p-3 rounded-xl border transition-all text-left ${
-                          selectedModel === 'gemini-3-flash-preview'
-                            ? 'bg-blue-50 border-blue-200 ring-1 ring-blue-200'
-                            : 'bg-white border-slate-200 hover:border-blue-200'
-                        }`}
-                      >
-                        <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${
-                          selectedModel === 'gemini-3-flash-preview' ? 'border-blue-800' : 'border-slate-300'
-                        }`}>
-                          {selectedModel === 'gemini-3-flash-preview' && <div className="w-2 h-2 bg-blue-800 rounded-full" />}
-                        </div>
-                        <div className="flex flex-col">
-                          <span className={`text-sm font-semibold ${selectedModel === 'gemini-3-flash-preview' ? 'text-blue-900' : 'text-slate-700'}`}>
-                            {t.modelFlash}
-                          </span>
-                          <span className="text-[10px] text-slate-400">Model mặc định, thông minh & nhanh</span>
-                        </div>
-                      </button>
-
-                      <button
-                        onClick={() => setSelectedModel('gemini-3.1-flash-lite-preview')}
-                        className={`flex items-center gap-3 p-3 rounded-xl border transition-all text-left ${
-                          selectedModel === 'gemini-3.1-flash-lite-preview'
-                            ? 'bg-blue-50 border-blue-200 ring-1 ring-blue-200'
-                            : 'bg-white border-slate-200 hover:border-blue-200'
-                        }`}
-                      >
-                        <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${
-                          selectedModel === 'gemini-3.1-flash-lite-preview' ? 'border-blue-800' : 'border-slate-300'
-                        }`}>
-                          {selectedModel === 'gemini-3.1-flash-lite-preview' && <div className="w-2 h-2 bg-blue-800 rounded-full" />}
-                        </div>
-                        <div className="flex flex-col">
-                          <span className={`text-sm font-semibold ${selectedModel === 'gemini-3.1-flash-lite-preview' ? 'text-blue-900' : 'text-slate-700'}`}>
-                            {t.modelLite}
-                          </span>
-                          <span className="text-[10px] text-slate-400">Dùng khi Flash hết hạn mức, tiết kiệm API</span>
-                        </div>
-                      </button>
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                onClick={() => setShowSettings(false)}
+                className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"
+              />
+              <motion.div
+                initial={{ scale: 0.95, opacity: 0, y: 20 }}
+                animate={{ scale: 1, opacity: 1, y: 0 }}
+                exit={{ scale: 0.95, opacity: 0, y: 20 }}
+                className="relative w-full max-w-lg bg-white rounded-3xl shadow-2xl overflow-hidden"
+              >
+                <div className="p-8">
+                  <div className="flex items-center justify-between mb-6">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 bg-blue-50 rounded-xl">
+                        <Settings className="w-5 h-5 text-blue-800" />
+                      </div>
+                      <div className="flex flex-col">
+                        <h3 className="text-lg font-bold text-slate-900 leading-tight">
+                          {t.apiSettings}
+                        </h3>
+                        <a 
+                          href="https://youtu.be/w0ux_YQwtx4" 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className="text-[11px] text-blue-600 hover:text-blue-800 hover:underline font-medium mt-0.5"
+                        >
+                          {t.apiGuide}
+                        </a>
+                      </div>
                     </div>
+                    <button 
+                      onClick={() => setShowSettings(false)}
+                      className="p-2 hover:bg-slate-100 rounded-full text-slate-400 transition-colors"
+                    >
+                      <X className="w-5 h-5" />
+                    </button>
+                  </div>
+                  
+                  <div className="flex flex-col gap-6">
+                    <div className="space-y-3">
+                      <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                        {t.apiCustomLabel}
+                      </label>
+                      <input
+                        type="password"
+                        value={customApiKey}
+                        onChange={(e) => handleApiKeyChange(e.target.value)}
+                        placeholder={t.apiPlaceholder}
+                        className="w-full px-4 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-blue-800 focus:border-transparent outline-none transition-all text-sm"
+                      />
+                      <p className="text-[11px] text-slate-400 leading-relaxed">
+                        {t.apiNote}
+                      </p>
+                    </div>
+
+                    <div className="pt-6 border-t border-slate-100">
+                      <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-4">
+                        {t.modelLabel}
+                      </label>
+                      <div className="grid grid-cols-1 gap-3">
+                        <button
+                          onClick={() => setSelectedModel('gemini-3-flash-preview')}
+                          className={`flex items-center gap-4 p-4 rounded-2xl border transition-all text-left ${
+                            selectedModel === 'gemini-3-flash-preview'
+                              ? 'bg-blue-50 border-blue-200 ring-1 ring-blue-200'
+                              : 'bg-white border-slate-200 hover:border-blue-200'
+                          }`}
+                        >
+                          <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${
+                            selectedModel === 'gemini-3-flash-preview' ? 'border-blue-800' : 'border-slate-300'
+                          }`}>
+                            {selectedModel === 'gemini-3-flash-preview' && <div className="w-2.5 h-2.5 bg-blue-800 rounded-full" />}
+                          </div>
+                          <div className="flex flex-col">
+                            <span className={`text-sm font-bold ${selectedModel === 'gemini-3-flash-preview' ? 'text-blue-900' : 'text-slate-700'}`}>
+                              {t.modelFlash}
+                            </span>
+                            <span className="text-[11px] text-slate-400 mt-0.5">Model mặc định, thông minh & nhanh</span>
+                          </div>
+                        </button>
+
+                        <button
+                          onClick={() => setSelectedModel('gemini-3.1-flash-lite-preview')}
+                          className={`flex items-center gap-4 p-4 rounded-2xl border transition-all text-left ${
+                            selectedModel === 'gemini-3.1-flash-lite-preview'
+                              ? 'bg-blue-50 border-blue-200 ring-1 ring-blue-200'
+                              : 'bg-white border-slate-200 hover:border-blue-200'
+                          }`}
+                        >
+                          <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${
+                            selectedModel === 'gemini-3.1-flash-lite-preview' ? 'border-blue-800' : 'border-slate-300'
+                          }`}>
+                            {selectedModel === 'gemini-3.1-flash-lite-preview' && <div className="w-2.5 h-2.5 bg-blue-800 rounded-full" />}
+                          </div>
+                          <div className="flex flex-col">
+                            <span className={`text-sm font-bold ${selectedModel === 'gemini-3.1-flash-lite-preview' ? 'text-blue-900' : 'text-slate-700'}`}>
+                              {t.modelLite}
+                            </span>
+                            <span className="text-[11px] text-slate-400 mt-0.5">Dùng khi Flash hết hạn mức, tiết kiệm API</span>
+                          </div>
+                        </button>
+                      </div>
+                    </div>
+
+                    <button
+                      onClick={() => setShowSettings(false)}
+                      className="w-full bg-slate-900 hover:bg-black text-white font-bold py-4 rounded-2xl transition-all shadow-lg active:scale-[0.98] mt-2"
+                    >
+                      Lưu & Đóng
+                    </button>
                   </div>
                 </div>
-              </div>
-            </motion.div>
+              </motion.div>
+            </div>
           )}
         </AnimatePresence>
 
