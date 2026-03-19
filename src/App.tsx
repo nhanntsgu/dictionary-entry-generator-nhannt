@@ -14,7 +14,7 @@ import { saveAs } from 'file-saver';
 // Translations
 const translations = {
   vi: {
-    title: "SOẠN TỪ ĐIỂN v1.9",
+    title: "SOẠN TỪ ĐIỂN v2.0",
     author: "by Nhân Nhân - Trường THCS Tùng Thiện Vương, phường Phú Định, TPHCM",
     poweredBy: "Powered by Gemini",
     apiSettings: "Cấu hình API Gemini",
@@ -42,7 +42,7 @@ const translations = {
     appDescription: "Hỗ trợ soạn bài tập dạng Từ điển (Definition Entry) chuẩn đề thi Tuyển sinh lớp 10 tại TP.HCM (Câu 35, 36). Thầy cô chỉ cần gõ từ khóa (cách nhau dấu phẩy), bấm Tạo thì sẽ nhận được bài hoàn chỉnh, có thể copy trực tiếp hoặc xuất file Word để sử dụng. Cảm ơn thầy cô đã sử dụng app! Mọi đóng góp xin gửi về email nhanntsgu@gmail.com.",
   },
   en: {
-    title: "DICTIONARY ENTRY GENERATOR v1.9",
+    title: "DICTIONARY ENTRY GENERATOR v2.0",
     author: "by Nhan Nhan - Tung Thien Vuong Secondary School, Ho Chi Minh City",
     poweredBy: "Powered by Gemini",
     apiSettings: "Gemini API Configuration",
@@ -95,11 +95,11 @@ Yêu cầu example:
 PHẦN 2 — TẠO CÂU HỎI
 Tạo 2 câu hỏi điền khuyết chính và 2 câu dự phòng:
 ANSWERS
-35.	
-36.	
+35. [câu hỏi]
+36. [câu hỏi]
 Câu dự phòng
-1.
-2.
+1. [câu hỏi]
+2. [câu hỏi]
 Quy tắc bắt buộc:
 1.	Mỗi câu (kể cả dự phòng) phải lấy chính xác một cụm 2–3 từ từ example sentences.
 2.	Không được thay đổi dạng từ.
@@ -129,17 +129,17 @@ part of speech
 • example 4 (Lưu ý: In đậm cụm từ chứa từ khóa mà bạn dùng làm đáp án dự phòng)
 • example 5
 **ANSWERS**
-35.	
-36.	
+35. [câu hỏi]
+36. [câu hỏi]
 **Câu dự phòng**
-1.
-2.
+1. [câu hỏi]
+2. [câu hỏi]
 **ĐÁP ÁN**
-35.	…
-36.	…
+35. [đáp án]
+36. [đáp án]
 **Câu dự phòng**
-1.
-2.
+1. [đáp án]
+2. [đáp án]
 
 LƯU Ý: Thay _____ bằng từ khóa. Các dòng thông tin phải tách biệt rõ ràng.
 Từ khóa: `;
