@@ -8,13 +8,13 @@ import { GoogleGenAI } from "@google/genai";
 import { Sparkles, Loader2, BookOpen, Send, X, Key, Settings, ShieldCheck, FileDown, Copy, Check, Languages } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import ReactMarkdown from 'react-markdown';
-import { Document, Packer, Paragraph, TextRun } from 'docx';
+import { Document, Packer, Paragraph, TextRun, HeadingLevel } from 'docx';
 import { saveAs } from 'file-saver';
 
 // Translations
 const translations = {
   vi: {
-    title: "SOẠN TỪ ĐIỂN v2.5",
+    title: "SOẠN TỪ ĐIỂN v2.6",
     author: "by Nhân Nhân - Trường THCS Tùng Thiện Vương, phường Phú Định, TPHCM",
     poweredBy: "Powered by Gemini",
     apiSettings: "Cấu hình API Gemini",
@@ -49,7 +49,7 @@ const translations = {
     appDescription: "Hỗ trợ soạn bài tập dạng Từ điển (Definition Entry) chuẩn đề thi Tuyển sinh lớp 10 tại TP.HCM (Câu 35, 36). Thầy cô chỉ cần gõ từ khóa (cách nhau dấu phẩy), bấm Tạo thì sẽ nhận được bài hoàn chỉnh, có thể copy trực tiếp hoặc xuất file Word để sử dụng. Cảm ơn thầy cô đã sử dụng app! Mọi đóng góp xin gửi về email nhanntsgu@gmail.com.",
   },
   en: {
-    title: "DICTIONARY ENTRY GENERATOR v2.5",
+    title: "DICTIONARY ENTRY GENERATOR v2.6",
     author: "by Nhan Nhan - Tung Thien Vuong Secondary School, Ho Chi Minh City",
     poweredBy: "Powered by Gemini",
     apiSettings: "Gemini API Configuration",
@@ -96,6 +96,7 @@ YÊU CẦU VỀ NỘI DUNG:
 
 YÊU CẦU VỀ ĐỊNH DẠNG (CỰC KỲ QUAN TRỌNG):
 - Sử dụng Markdown chuẩn.
+- BẮT BUỘC có 1 dấu cách sau ký tự # (Ví dụ: "# Word" chứ không phải "#Word").
 - KHÔNG được để các dòng dính sát nhau mà không có xuống dòng nếu chúng là các mục khác nhau.
 - Giữa các câu hỏi (35, 36, 1, 2) PHẢI có đúng 1 dòng trống để tránh lỗi dính chữ (hiển thị trên cùng một hàng).
 - Tuyệt đối không để số thứ tự nằm riêng một dòng.
@@ -174,11 +175,21 @@ export default function App() {
   const exportToWord = async () => {
     if (!result) return;
 
-    // Split content by lines to handle paragraphs
     const lines = result.split('\n');
     const paragraphs = lines.map(line => {
+      let cleanLine = line.trim();
+      let headingLevel: any = undefined;
+
+      if (cleanLine.startsWith('# ')) {
+        headingLevel = HeadingLevel.HEADING_1;
+        cleanLine = cleanLine.substring(2);
+      } else if (cleanLine.startsWith('## ')) {
+        headingLevel = HeadingLevel.HEADING_2;
+        cleanLine = cleanLine.substring(3);
+      }
+
       // Simple Markdown parser for Word export (handles **bold** and *italic*)
-      const parts = line.split(/(\*\*.*?\*\*|\*.*?\*)/g);
+      const parts = cleanLine.split(/(\*\*.*?\*\*|\*.*?\*)/g);
       
       const children = parts.map(part => {
         if (part.startsWith('**') && part.endsWith('**')) {
@@ -186,7 +197,7 @@ export default function App() {
             text: part.slice(2, -2),
             bold: true,
             font: "Times New Roman",
-            size: 24, // 12pt
+            size: headingLevel ? 28 : 24, // 14pt for headings, 12pt for body
           });
         }
         if (part.startsWith('*') && part.endsWith('*')) {
@@ -194,20 +205,23 @@ export default function App() {
             text: part.slice(1, -1),
             italics: true,
             font: "Times New Roman",
-            size: 24, // 12pt
+            size: headingLevel ? 28 : 24,
           });
         }
         return new TextRun({
           text: part,
           font: "Times New Roman",
-          size: 24, // 12pt
+          size: headingLevel ? 28 : 24,
         });
       });
 
       return new Paragraph({
         children,
+        heading: headingLevel,
         spacing: {
-          line: 276, // 1.15 * 240 (standard line height) = 276
+          before: headingLevel ? 240 : 0,
+          after: headingLevel ? 120 : 120,
+          line: 276,
         },
       });
     });
@@ -227,14 +241,16 @@ export default function App() {
     if (!result) return;
 
     try {
-      // Convert Markdown bold and italic to HTML for rich text clipboard
-      const htmlContent = result
+      // Convert Markdown to HTML for rich text clipboard
+      let htmlContent = result
+        .replace(/^# (.*$)/gm, '<h1>$1</h1>')
+        .replace(/^## (.*$)/gm, '<h2>$1</h2>')
         .replace(/\*\*(.*?)\*\*/g, '<b>$1</b>')
         .replace(/\*(.*?)\*/g, '<i>$1</i>')
         .replace(/\n/g, '<br>');
       
       const blobHtml = new Blob([htmlContent], { type: 'text/html' });
-      const blobText = new Blob([result.replace(/\*\*/g, '').replace(/\*/g, '')], { type: 'text/plain' });
+      const blobText = new Blob([result.replace(/^#+ /gm, '').replace(/\*\*/g, '').replace(/\*/g, '')], { type: 'text/plain' });
       
       const data = [new ClipboardItem({
         'text/html': blobHtml,
@@ -246,7 +262,7 @@ export default function App() {
       setTimeout(() => setCopySuccess(false), 2000);
     } catch (err) {
       // Fallback to plain text if rich text fails
-      await navigator.clipboard.writeText(result.replace(/\*\*/g, '').replace(/\*/g, ''));
+      await navigator.clipboard.writeText(result.replace(/^#+ /gm, '').replace(/\*\*/g, '').replace(/\*/g, ''));
       setCopySuccess(true);
       setTimeout(() => setCopySuccess(false), 2000);
     }
@@ -664,7 +680,7 @@ export default function App() {
                 </div>
               </div>
               
-              <div className="prose prose-slate max-w-none prose-headings:m-0 prose-p:m-0 prose-li:m-0">
+              <div className="prose prose-slate max-w-none prose-headings:m-0 prose-p:m-0 prose-li:m-0 whitespace-pre-wrap">
                 <ReactMarkdown
                   components={{
                     h1: ({ children }) => {
