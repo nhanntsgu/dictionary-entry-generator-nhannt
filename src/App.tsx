@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { GoogleGenAI } from "@google/genai";
 import { Sparkles, Loader2, BookOpen, Send, X, Key, Settings, ShieldCheck, FileDown, Copy, Check, Languages } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
@@ -14,7 +14,7 @@ import { saveAs } from 'file-saver';
 // Translations
 const translations = {
   vi: {
-    title: "SOẠN TỪ ĐIỂN v2.1",
+    title: "SOẠN TỪ ĐIỂN v2.2",
     author: "by Nhân Nhân - Trường THCS Tùng Thiện Vương, phường Phú Định, TPHCM",
     poweredBy: "Powered by Gemini",
     apiSettings: "Cấu hình API Gemini",
@@ -25,7 +25,7 @@ const translations = {
     keywordLabel: "Từ khóa",
     keywordPlaceholder: "Ví dụ: benefit, information, aware...",
     generateBtn: "Tạo",
-    generatingBtn: "Đang tạo...",
+    generatingBtn: "Đang xử lý...",
     errorEmpty: "Vui lòng nhập từ khóa!",
     errorNoCustomApi: "Vui lòng nhập API Key của bạn!",
     errorFailed: "Không thể tạo nội dung. Vui lòng thử lại.",
@@ -35,6 +35,13 @@ const translations = {
     copiedBtn: "Đã copy",
     exportBtn: "Tải file Word",
     emptyState: "Nhập từ khóa để bắt đầu",
+    loadingMessages: [
+      "AI đang phân tích từ khóa của bạn...",
+      "Đang soạn câu hỏi định nghĩa (Definition)...",
+      "Đang tạo các câu dự phòng (Backup)...",
+      "Đang kiểm tra định dạng và đáp án...",
+      "Sắp xong rồi, vui lòng đợi thêm chút nữa..."
+    ],
     settingsTitle: "Cấu hình",
     modelLabel: "Lựa chọn Model",
     modelFlash: "Gemini 3 Flash (Nhanh)",
@@ -42,7 +49,7 @@ const translations = {
     appDescription: "Hỗ trợ soạn bài tập dạng Từ điển (Definition Entry) chuẩn đề thi Tuyển sinh lớp 10 tại TP.HCM (Câu 35, 36). Thầy cô chỉ cần gõ từ khóa (cách nhau dấu phẩy), bấm Tạo thì sẽ nhận được bài hoàn chỉnh, có thể copy trực tiếp hoặc xuất file Word để sử dụng. Cảm ơn thầy cô đã sử dụng app! Mọi đóng góp xin gửi về email nhanntsgu@gmail.com.",
   },
   en: {
-    title: "DICTIONARY ENTRY GENERATOR v2.1",
+    title: "DICTIONARY ENTRY GENERATOR v2.2",
     author: "by Nhan Nhan - Tung Thien Vuong Secondary School, Ho Chi Minh City",
     poweredBy: "Powered by Gemini",
     apiSettings: "Gemini API Configuration",
@@ -53,7 +60,7 @@ const translations = {
     keywordLabel: "Keyword",
     keywordPlaceholder: "Example: benefit, information, aware...",
     generateBtn: "Generate",
-    generatingBtn: "Generating...",
+    generatingBtn: "Processing...",
     errorEmpty: "Please enter a keyword!",
     errorNoCustomApi: "Please enter your API Key!",
     errorFailed: "Could not generate content. Please try again.",
@@ -63,6 +70,13 @@ const translations = {
     copiedBtn: "Copied",
     exportBtn: "Download Word",
     emptyState: "Enter a keyword to start",
+    loadingMessages: [
+      "AI is analyzing your keywords...",
+      "Composing definition questions...",
+      "Generating backup questions...",
+      "Checking format and answers...",
+      "Almost done, please wait a bit longer..."
+    ],
     settingsTitle: "Settings",
     modelLabel: "Model Selection",
     modelFlash: "Gemini 3 Flash (Fast)",
@@ -148,6 +162,8 @@ export default function App() {
   const [keyword, setKeyword] = useState('');
   const [result, setResult] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [loadingMsgIndex, setLoadingMsgIndex] = useState(0);
+
   const [error, setError] = useState('');
   const [customApiKey, setCustomApiKey] = useState(() => {
     return localStorage.getItem('gemini_api_key') || '';
@@ -160,6 +176,18 @@ export default function App() {
   const [selectedModel, setSelectedModel] = useState<'gemini-3-flash-preview' | 'gemini-3.1-flash-lite-preview'>('gemini-3-flash-preview');
 
   const t = translations[lang];
+
+  // Loading messages rotation
+  useEffect(() => {
+    let interval: any;
+    if (isLoading) {
+      setLoadingMsgIndex(0);
+      interval = setInterval(() => {
+        setLoadingMsgIndex((prev) => (prev + 1) % t.loadingMessages.length);
+      }, 3000);
+    }
+    return () => clearInterval(interval);
+  }, [isLoading, t.loadingMessages.length]);
 
   const handleApiKeyChange = (value: string) => {
     setCustomApiKey(value);
@@ -576,6 +604,44 @@ export default function App() {
                 </>
               )}
             </button>
+
+            {isLoading && (
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="flex flex-col items-center gap-3 py-4 bg-blue-50/50 rounded-xl border border-blue-100/50"
+              >
+                <div className="flex items-center gap-2 text-blue-800 font-medium">
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <AnimatePresence mode="wait">
+                    <motion.span
+                      key={loadingMsgIndex}
+                      initial={{ opacity: 0, y: 5 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -5 }}
+                      transition={{ duration: 0.3 }}
+                      className="text-sm"
+                    >
+                      {t.loadingMessages[loadingMsgIndex]}
+                    </motion.span>
+                  </AnimatePresence>
+                </div>
+                <div className="w-48 h-1 bg-slate-100 rounded-full overflow-hidden">
+                  <motion.div 
+                    className="h-full bg-blue-600"
+                    animate={{ 
+                      width: ["0%", "100%"],
+                      x: ["-100%", "100%"]
+                    }}
+                    transition={{ 
+                      duration: 2,
+                      repeat: Infinity,
+                      ease: "easeInOut"
+                    }}
+                  />
+                </div>
+              </motion.div>
+            )}
 
             {error && (
               <motion.p 
