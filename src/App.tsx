@@ -14,7 +14,7 @@ import { saveAs } from 'file-saver';
 // Translations
 const translations = {
   vi: {
-    title: "SOẠN TỪ ĐIỂN v2.6",
+    title: "SOẠN TỪ ĐIỂN v2.7",
     author: "by Nhân Nhân - Trường THCS Tùng Thiện Vương, phường Phú Định, TPHCM",
     poweredBy: "Powered by Gemini",
     apiSettings: "Cấu hình API Gemini",
@@ -49,7 +49,7 @@ const translations = {
     appDescription: "Hỗ trợ soạn bài tập dạng Từ điển (Definition Entry) chuẩn đề thi Tuyển sinh lớp 10 tại TP.HCM (Câu 35, 36). Thầy cô chỉ cần gõ từ khóa (cách nhau dấu phẩy), bấm Tạo thì sẽ nhận được bài hoàn chỉnh, có thể copy trực tiếp hoặc xuất file Word để sử dụng. Cảm ơn thầy cô đã sử dụng app! Mọi đóng góp xin gửi về email nhanntsgu@gmail.com.",
   },
   en: {
-    title: "DICTIONARY ENTRY GENERATOR v2.6",
+    title: "DICTIONARY ENTRY GENERATOR v2.7",
     author: "by Nhan Nhan - Tung Thien Vuong Secondary School, Ho Chi Minh City",
     poweredBy: "Powered by Gemini",
     apiSettings: "Gemini API Configuration",
@@ -98,8 +98,9 @@ YÊU CẦU VỀ ĐỊNH DẠNG (CỰC KỲ QUAN TRỌNG):
 - Sử dụng Markdown chuẩn.
 - BẮT BUỘC có 1 dấu cách sau ký tự # (Ví dụ: "# Word" chứ không phải "#Word").
 - KHÔNG được để các dòng dính sát nhau mà không có xuống dòng nếu chúng là các mục khác nhau.
-- Giữa các câu hỏi (35, 36, 1, 2) PHẢI có đúng 1 dòng trống để tránh lỗi dính chữ (hiển thị trên cùng một hàng).
+- Giữa các câu hỏi (35, 36, 1, 2) nên có 1 dòng trống để rõ ràng, nhưng không được để dư thừa quá nhiều dòng trống.
 - Tuyệt đối không để số thứ tự nằm riêng một dòng.
+- Đảm bảo mỗi dòng văn bản kết thúc bằng một dấu xuống dòng đơn giản.
 
 CẤU TRÚC MẪU BẮT BUỘC:
 **VI. Look at the entry of the word “_____” in a dictionary. Use what you can get from the entry to complete the sentences with two or three words.**
@@ -117,12 +118,10 @@ CẤU TRÚC MẪU BẮT BUỘC:
 
 ## ANSWERS
 35. [câu hỏi 35]
-
 36. [câu hỏi 36]
 
 ## Câu dự phòng
 1. [câu hỏi dự phòng 1]
-
 2. [câu hỏi dự phòng 2]
 
 ## ĐÁP ÁN
@@ -133,7 +132,7 @@ CẤU TRÚC MẪU BẮT BUỘC:
 1. [đáp án]
 2. [đáp án]
 
-LƯU Ý: Thay _____ bằng từ khóa. Giữa các câu hỏi 35, 36 và 1, 2 phải có dòng trống.
+LƯU Ý: Thay _____ bằng từ khóa.
 Từ khóa: `;
 
 export default function App() {
@@ -242,15 +241,28 @@ export default function App() {
 
     try {
       // Convert Markdown to HTML for rich text clipboard
-      let htmlContent = result
-        .replace(/^# (.*$)/gm, '<h1>$1</h1>')
-        .replace(/^## (.*$)/gm, '<h2>$1</h2>')
-        .replace(/\*\*(.*?)\*\*/g, '<b>$1</b>')
-        .replace(/\*(.*?)\*/g, '<i>$1</i>')
-        .replace(/\n/g, '<br>');
+      // Use <p> tags for each line to ensure Paragraph Marks (Enter) in Word
+      const htmlContent = result
+        .split('\n')
+        .map(line => {
+          const trimmedLine = line.trim();
+          if (line.startsWith('# ')) {
+            return `<h1 style="font-size: 16pt; font-family: 'Times New Roman'; margin-bottom: 0;">${line.substring(2)}</h1>`;
+          } else if (line.startsWith('## ')) {
+            return `<h2 style="font-size: 14pt; font-family: 'Times New Roman'; margin-top: 12pt; margin-bottom: 0;">${line.substring(3)}</h2>`;
+          } else if (trimmedLine === '') {
+            return '<p style="margin: 0; min-height: 1em;">&nbsp;</p>';
+          } else {
+            let formattedLine = line
+              .replace(/\*\*(.*?)\*\*/g, '<b>$1</b>')
+              .replace(/\*(.*?)\*/g, '<i>$1</i>');
+            return `<p style="margin: 0; font-family: 'Times New Roman'; font-size: 12pt;">${formattedLine}</p>`;
+          }
+        })
+        .join('');
       
       const blobHtml = new Blob([htmlContent], { type: 'text/html' });
-      const blobText = new Blob([result.replace(/^#+ /gm, '').replace(/\*\*/g, '').replace(/\*/g, '')], { type: 'text/plain' });
+      const blobText = new Blob([result.replace(/^#+ /gm, '').replace(/\*\*/g, '').replace(/\*\*/g, '')], { type: 'text/plain' });
       
       const data = [new ClipboardItem({
         'text/html': blobHtml,
