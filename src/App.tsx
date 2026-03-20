@@ -15,7 +15,7 @@ import { saveAs } from 'file-saver';
 // Translations
 const translations = {
   vi: {
-    title: "SOẠN TỪ ĐIỂN v3.8",
+    title: "SOẠN TỪ ĐIỂN v3.9",
     author: "by Nhân Nhân - Trường THCS Tùng Thiện Vương, phường Phú Định, TPHCM",
     homeBtn: "Về trang chủ NHÂN NHÂN APP",
     historyTitle: "Lịch sử gần đây",
@@ -53,7 +53,7 @@ const translations = {
     appDescription: "Hỗ trợ soạn bài tập dạng Từ điển (Definition Entry) chuẩn đề thi Tuyển sinh lớp 10 tại TP.HCM (Câu 35, 36). Thầy cô chỉ cần gõ từ khóa (cách nhau dấu phẩy), bấm Tạo thì sẽ nhận được bài hoàn chỉnh, có thể copy trực tiếp hoặc xuất file Word để sử dụng. Cảm ơn thầy cô đã sử dụng app! Mọi đóng góp xin gửi về email nhanntsgu@gmail.com.",
   },
   en: {
-    title: "DICTIONARY ENTRY GENERATOR v3.8",
+    title: "DICTIONARY ENTRY GENERATOR v3.9",
     author: "by Nhan Nhan - Tung Thien Vuong Secondary School, Ho Chi Minh City",
     homeBtn: "Back to NHAN NHAN APP Home",
     historyTitle: "Recent History",
@@ -141,6 +141,11 @@ CẤU TRÚC MẪU BẮT BUỘC (SAO CHÉP CHÍNH XÁC THỨ TỰ):
 LƯU Ý: Thay _____ bằng từ khóa. Đảm bảo các ví dụ (example) nằm trên các dòng riêng biệt. Sau các tiêu đề **ANSWERS**, **ĐÁP ÁN**, **CÂU DỰ PHÒNG**, **ĐÁP ÁN CÂU DỰ PHÒNG** phải xuống dòng ngay để viết nội dung, không để dòng trống. Phân cách giữa các phần bằng đúng 1 dòng trống.
 Từ khóa: `;
 
+interface HistoryItem {
+  keyword: string;
+  result: string;
+}
+
 export default function App() {
   const [keyword, setKeyword] = useState('');
   const [result, setResult] = useState('');
@@ -157,8 +162,8 @@ export default function App() {
   const [copySuccess, setCopySuccess] = useState(false);
   const [lang, setLang] = useState<'vi' | 'en'>('vi');
   const [selectedModel, setSelectedModel] = useState<'gemini-3-flash-preview' | 'gemini-3.1-flash-lite-preview'>('gemini-3-flash-preview');
-  const [history, setHistory] = useState<string[]>(() => {
-    const saved = localStorage.getItem('dictionary_history');
+  const [history, setHistory] = useState<HistoryItem[]>(() => {
+    const saved = localStorage.getItem('dictionary_history_v2');
     return saved ? JSON.parse(saved) : [];
   });
 
@@ -166,7 +171,7 @@ export default function App() {
 
   // Save history to localStorage
   useEffect(() => {
-    localStorage.setItem('dictionary_history', JSON.stringify(history));
+    localStorage.setItem('dictionary_history_v2', JSON.stringify(history));
   }, [history]);
 
   // Loading messages rotation
@@ -316,9 +321,12 @@ export default function App() {
       
       if (text) {
         setResult(text);
-        // Update history
+        // Update history with result
         setHistory(prev => {
-          const newHistory = [keyword, ...prev.filter(item => item !== keyword)].slice(0, 10);
+          const newHistory = [
+            { keyword, result: text }, 
+            ...prev.filter(item => item.keyword !== keyword)
+          ].slice(0, 10);
           return newHistory;
         });
       } else {
@@ -359,9 +367,14 @@ export default function App() {
     }
   };
 
-  const deleteHistoryItem = (e: React.MouseEvent, itemToDelete: string) => {
+  const deleteHistoryItem = (e: React.MouseEvent, itemToDelete: HistoryItem) => {
     e.stopPropagation();
-    setHistory(prev => prev.filter(item => item !== itemToDelete));
+    setHistory(prev => prev.filter(item => item.keyword !== itemToDelete.keyword));
+  };
+
+  const loadHistoryItem = (item: HistoryItem) => {
+    setKeyword(item.keyword);
+    setResult(item.result);
   };
 
   return (
@@ -481,14 +494,14 @@ export default function App() {
             <div className="flex flex-wrap gap-2">
               {history.map((item, index) => (
                 <motion.div
-                  key={item}
+                  key={item.keyword}
                   initial={{ opacity: 0, scale: 0.9 }}
                   animate={{ opacity: 1, scale: 1 }}
                   transition={{ delay: index * 0.05 }}
-                  onClick={() => setKeyword(item)}
+                  onClick={() => loadHistoryItem(item)}
                   className="group flex items-center gap-2 px-3 py-2 bg-white border border-slate-200 rounded-xl cursor-pointer hover:border-blue-300 hover:bg-blue-50 transition-all shadow-sm"
                 >
-                  <span className="text-sm text-slate-600 group-hover:text-blue-800">{item}</span>
+                  <span className="text-sm text-slate-600 group-hover:text-blue-800">{item.keyword}</span>
                   <button
                     onClick={(e) => deleteHistoryItem(e, item)}
                     className="p-1 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-md transition-all opacity-0 group-hover:opacity-100"
