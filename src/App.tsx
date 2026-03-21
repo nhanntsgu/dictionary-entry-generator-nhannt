@@ -518,9 +518,9 @@ export default function App() {
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-3">
             <img 
-              src="https://i.ibb.co/39w261cD/logottv-goc.png" 
+              src="https://i.ibb.co/Nd7jfCGJ/NN-logo.jpg" 
               alt="Logo" 
-              className="h-10 w-auto object-contain"
+              className="h-10 w-auto object-contain rounded-lg"
               referrerPolicy="no-referrer"
               onError={(e) => {
                 // Fallback to book icon if link fails
@@ -829,9 +829,9 @@ export default function App() {
                 >
                   <div className="opacity-20 select-none flex flex-col items-center">
                     <img 
-                      src="https://i.ibb.co/39w261cD/logottv-goc.png" 
+                      src="https://i.ibb.co/Nd7jfCGJ/NN-logo.jpg" 
                       alt="School Logo" 
-                      className="w-24 h-24 mb-6 grayscale object-contain"
+                      className="w-24 h-24 mb-6 grayscale opacity-50 object-contain rounded-2xl"
                       referrerPolicy="no-referrer"
                       onError={(e) => {
                         e.currentTarget.style.display = 'none';
