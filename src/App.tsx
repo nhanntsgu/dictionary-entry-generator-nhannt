@@ -514,67 +514,41 @@ export default function App() {
   return (
     <div className="min-h-screen lg:h-screen flex flex-col bg-[#f5f5f5] text-slate-900 font-sans selection:bg-blue-100 lg:overflow-hidden">
       {/* Header */}
-      <header className="bg-white border-b border-black/5 py-3 px-4 flex-shrink-0 shadow-sm">
+      <header className="bg-white border-b border-black/5 py-3 px-4 flex-shrink-0 shadow-sm z-30">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-3">
             <img 
               src="https://i.ibb.co/Nd7jfCGJ/NN-logo.jpg" 
               alt="Logo" 
-              className="h-10 w-auto object-contain rounded-lg"
+              className="h-10 w-auto object-contain rounded-lg shadow-sm"
               referrerPolicy="no-referrer"
               onError={(e) => {
-                // Fallback to book icon if link fails
                 e.currentTarget.style.display = 'none';
-                const parent = e.currentTarget.parentElement;
-                if (parent) {
-                  const icon = document.createElement('div');
-                  icon.className = "bg-blue-800 p-2 rounded-xl";
-                  icon.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-book-open w-5 h-5 text-white"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>';
-                  parent.insertBefore(icon, parent.firstChild);
-                }
               }}
             />
             <div className="flex flex-col">
-              <h1 className="text-lg font-bold tracking-tight">{t.title}</h1>
-              <p className="text-[9px] text-slate-400 font-medium -mt-1">
+              <h1 className="text-lg font-bold tracking-tight text-slate-900">{t.title}</h1>
+              <p className="text-[10px] text-slate-400 font-medium -mt-1">
                 {t.author}
               </p>
             </div>
           </div>
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3">
             <a 
               href="https://nhannhan.vercel.app/" 
               target="_blank" 
               rel="noopener noreferrer"
-              className="hidden lg:flex items-center gap-2 px-3 py-1.5 bg-blue-50 text-blue-800 rounded-xl text-[10px] font-bold hover:bg-blue-100 transition-all border border-blue-100"
+              className="flex items-center gap-2 px-3 py-1.5 bg-slate-50 text-slate-600 rounded-xl text-[10px] font-bold hover:bg-slate-100 transition-all border border-slate-200"
             >
               <Home className="w-3.5 h-3.5" />
-              {t.homeBtn}
-              <ExternalLink className="w-3 h-3 opacity-50" />
+              <span className="hidden sm:inline">{t.homeBtn}</span>
             </a>
-            <div className="hidden md:block text-[10px] font-mono text-slate-400 uppercase tracking-widest">
-              {t.poweredBy}
-            </div>
-            <div className="flex items-center bg-slate-100 rounded-full p-1">
-              <button
-                onClick={() => setLang('vi')}
-                className={`px-2 py-0.5 rounded-full text-[9px] font-bold transition-all ${lang === 'vi' ? 'bg-white text-blue-800 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
-              >
-                VI
-              </button>
-              <button
-                onClick={() => setLang('en')}
-                className={`px-2 py-0.5 rounded-full text-[9px] font-bold transition-all ${lang === 'en' ? 'bg-white text-blue-800 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
-              >
-                EN
-              </button>
-            </div>
             <button
               onClick={() => setShowSettings(!showSettings)}
-              className={`p-1.5 hover:bg-slate-100 rounded-full transition-colors ${showSettings ? 'text-blue-800 bg-blue-50' : 'text-slate-500'}`}
+              className={`p-2 hover:bg-slate-100 rounded-xl transition-all ${showSettings ? 'text-blue-800 bg-blue-50' : 'text-slate-500'}`}
               title={t.settingsTitle}
             >
-              <Settings className={`w-4.5 h-4.5 ${showSettings ? 'rotate-90' : ''} transition-transform duration-300`} />
+              <Settings className={`w-5 h-5 ${showSettings ? 'rotate-90' : ''} transition-transform duration-300`} />
             </button>
           </div>
         </div>
@@ -583,15 +557,15 @@ export default function App() {
       <main className="flex-1 max-w-7xl mx-auto w-full p-4 lg:overflow-hidden">
         <div className="flex flex-col lg:flex-row gap-4 lg:h-full">
           {/* Left Column: Controls */}
-          <div className="w-full lg:w-[340px] flex flex-col gap-4 lg:overflow-y-auto pr-1">
+          <div className="w-full lg:w-[340px] flex flex-col gap-4 lg:overflow-y-auto pr-1 pb-4 lg:pb-0">
             {/* App Description */}
             <motion.div 
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
-              className="bg-slate-50/80 border border-slate-200 rounded-xl p-4 flex flex-col gap-3 relative overflow-hidden group"
+              className="bg-white border border-black/5 rounded-2xl p-5 shadow-sm"
             >
-              <div className="flex items-center gap-3">
-                <div className="flex-shrink-0 w-10 h-10 bg-blue-800 rounded-xl flex items-center justify-center shadow-lg shadow-blue-900/20 group-hover:scale-105 transition-transform duration-500">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="w-10 h-10 bg-blue-800 rounded-xl flex items-center justify-center shadow-lg shadow-blue-900/20">
                   <BookOpen className="w-5 h-5 text-white" />
                 </div>
                 <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wider">Thông tin ứng dụng</h3>
@@ -601,7 +575,7 @@ export default function App() {
                   <React.Fragment key={i}>
                     {part}
                     {i < arr.length - 1 && (
-                      <a href="mailto:nhanntsgu@gmail.com" className="text-blue-800 font-semibold hover:underline decoration-2 underline-offset-4">
+                      <a href="mailto:nhanntsgu@gmail.com" className="text-blue-800 font-semibold hover:underline">
                         nhanntsgu@gmail.com
                       </a>
                     )}
@@ -614,11 +588,11 @@ export default function App() {
             <motion.div 
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
-              className="bg-white rounded-xl p-5 shadow-sm border border-black/5"
+              className="bg-white rounded-2xl p-6 shadow-sm border border-black/5"
             >
-              <div className="flex flex-col gap-4">
+              <div className="flex flex-col gap-5">
                 <div>
-                  <label htmlFor="keyword" className="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2">
+                  <label htmlFor="keyword" className="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2.5">
                     {t.keywordLabel}
                   </label>
                   <div className="relative">
@@ -629,7 +603,7 @@ export default function App() {
                       onChange={(e) => setKeyword(e.target.value)}
                       onKeyDown={(e) => e.key === 'Enter' && generateExercise()}
                       placeholder={t.keywordPlaceholder}
-                      className="w-full pl-3 pr-10 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-800 focus:border-transparent outline-none transition-all text-sm"
+                      className="w-full pl-4 pr-10 py-3.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-800 focus:border-transparent outline-none transition-all text-sm"
                     />
                     <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1.5">
                       <AnimatePresence>
@@ -639,14 +613,12 @@ export default function App() {
                             animate={{ opacity: 1, scale: 1 }}
                             exit={{ opacity: 0, scale: 0.8 }}
                             onClick={() => setKeyword('')}
-                            className="p-1 hover:bg-slate-200 rounded-full text-slate-400 transition-colors"
-                            title="Xóa nhanh"
+                            className="p-1.5 hover:bg-slate-200 rounded-full text-slate-400 transition-colors"
                           >
                             <X className="w-4 h-4" />
                           </motion.button>
                         )}
                       </AnimatePresence>
-                      <Sparkles className="w-4 h-4 text-slate-300" />
                     </div>
                   </div>
                 </div>
@@ -654,7 +626,7 @@ export default function App() {
                 <button
                   onClick={generateExercise}
                   disabled={isLoading}
-                  className="w-full bg-blue-800 hover:bg-blue-900 disabled:bg-slate-400 text-white font-bold py-3 rounded-xl flex items-center justify-center gap-2 transition-all shadow-md active:scale-[0.98] text-sm"
+                  className="w-full bg-blue-800 hover:bg-blue-900 disabled:bg-slate-400 text-white font-bold py-3.5 rounded-xl flex items-center justify-center gap-2 transition-all shadow-md active:scale-[0.98] text-sm"
                 >
                   {isLoading ? (
                     <>
@@ -670,48 +642,34 @@ export default function App() {
                 </button>
 
                 {isLoading && (
-                  <motion.div
-                    initial={{ opacity: 0, y: 5 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="flex flex-col items-center gap-2 py-3 bg-blue-50/50 rounded-xl border border-blue-100/50"
-                  >
-                    <div className="flex items-center gap-2 text-blue-800 font-bold">
-                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-center gap-2 text-blue-800 font-bold">
                       <AnimatePresence mode="wait">
                         <motion.span
                           key={loadingMsgIndex}
                           initial={{ opacity: 0, y: 3 }}
                           animate={{ opacity: 1, y: 0 }}
                           exit={{ opacity: 0, y: -3 }}
-                          transition={{ duration: 0.3 }}
-                          className="text-[10px] uppercase tracking-wider"
+                          className="text-[10px] uppercase tracking-wider text-center"
                         >
                           {t.loadingMessages[loadingMsgIndex]}
                         </motion.span>
                       </AnimatePresence>
                     </div>
-                    <div className="w-32 h-1 bg-slate-100 rounded-full overflow-hidden">
+                    <div className="w-full h-1 bg-slate-100 rounded-full overflow-hidden">
                       <motion.div 
-                        className="h-full bg-blue-600"
-                        animate={{ 
-                          width: ["0%", "100%"],
-                          x: ["-100%", "100%"]
-                        }}
-                        transition={{ 
-                          duration: 2,
-                          repeat: Infinity,
-                          ease: "easeInOut"
-                        }}
+                        className="h-full bg-blue-800"
+                        animate={{ width: ["0%", "100%"] }}
+                        transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
                       />
                     </div>
-                  </motion.div>
+                  </div>
                 )}
-
                 {error && (
                   <motion.p 
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
-                    className="text-red-500 text-[11px] font-bold text-center"
+                    className="text-red-500 text-[11px] font-bold text-center mt-2"
                   >
                     {error}
                   </motion.p>
