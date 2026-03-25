@@ -5,17 +5,18 @@
 
 import React, { useState, useEffect } from 'react';
 import { GoogleGenAI } from "@google/genai";
-import { Sparkles, Loader2, BookOpen, Send, X, Key, Settings, ShieldCheck, FileDown, Copy, Check, Languages, History, Trash2, Home, ExternalLink, RefreshCw } from 'lucide-react';
+import { Sparkles, Loader2, BookOpen, Send, X, Key, Settings, ShieldCheck, FileDown, Copy, Check, Languages, History, Trash2, Home, ExternalLink, RefreshCw, Info } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import ReactMarkdown from 'react-markdown';
 import remarkBreaks from 'remark-breaks';
 import { Document, Packer, Paragraph, TextRun, HeadingLevel } from 'docx';
 import { saveAs } from 'file-saver';
+import { changelog } from './changelog';
 
 // Translations
 const translations = {
   vi: {
-    title: "SOẠN TỪ ĐIỂN v4.0",
+    title: "SOẠN TỪ ĐIỂN v4.1.0",
     author: "by Nhân Nhân - Trường THCS Tùng Thiện Vương, phường Phú Định, TPHCM",
     homeBtn: "Về trang chủ NHÂN NHÂN APP",
     historyTitle: "Lịch sử gần đây",
@@ -51,9 +52,12 @@ const translations = {
     modelFlash: "Gemini 3 Flash (Nhanh)",
     modelLite: "Gemini 2.5 Flash Lite (Tiết kiệm)",
     appDescription: "Hỗ trợ soạn bài tập dạng Từ điển (Definition Entry) chuẩn đề thi Tuyển sinh lớp 10 tại TP.HCM (Câu 35, 36). Thầy cô chỉ cần gõ từ khóa (cách nhau dấu phẩy), bấm Tạo thì sẽ nhận được bài hoàn chỉnh, có thể copy trực tiếp hoặc xuất file Word để sử dụng. Cảm ơn thầy cô đã sử dụng app! Mọi đóng góp xin gửi về email nhanntsgu@gmail.com.",
+    changelogTitle: "Nhật ký thay đổi",
+    versionLabel: "Phiên bản",
+    dateLabel: "Ngày cập nhật",
   },
   en: {
-    title: "DICTIONARY ENTRY GENERATOR v4.0",
+    title: "DICTIONARY ENTRY GENERATOR v4.1.0",
     author: "by Nhan Nhan - Tung Thien Vuong Secondary School, Ho Chi Minh City",
     homeBtn: "Back to NHAN NHAN APP Home",
     historyTitle: "Recent History",
@@ -89,6 +93,9 @@ const translations = {
     modelFlash: "Gemini 3 Flash (Fast)",
     modelLite: "Gemini 2.5 Flash Lite (Lite)",
     appDescription: "Supports creating Dictionary Entry exercises standard for the Grade 10 Entrance Exam in Ho Chi Minh City (Questions 1, 2). Teachers just need to type keywords (separated by commas), click Generate to receive a complete lesson, which can be copied directly or exported to a Word file for use. Thank you for using the app! Please send any feedback to email nhanntsgu@gmail.com.",
+    changelogTitle: "Changelog",
+    versionLabel: "Version",
+    dateLabel: "Update Date",
   }
 };
 
@@ -271,6 +278,87 @@ function SettingsModal({
   );
 }
 
+function ChangelogModal({ 
+  show, 
+  onClose, 
+  t, 
+  lang 
+}: { 
+  show: boolean; 
+  onClose: () => void; 
+  t: any; 
+  lang: 'vi' | 'en';
+}) {
+  return (
+    <AnimatePresence>
+      {show && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={onClose}
+            className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"
+          />
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95, y: 20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.95, y: 20 }}
+            className="relative w-full max-w-lg bg-white rounded-3xl shadow-2xl overflow-hidden border border-slate-200"
+          >
+            <div className="p-6">
+              <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-blue-50 rounded-xl flex items-center justify-center">
+                    <Info className="w-5 h-5 text-blue-800" />
+                  </div>
+                  <h2 className="text-xl font-bold text-slate-800">{t.changelogTitle}</h2>
+                </div>
+                <button 
+                  onClick={onClose}
+                  className="p-2 hover:bg-slate-100 rounded-full text-slate-400 transition-colors"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              <div className="space-y-6 max-h-[60vh] overflow-y-auto pr-2 custom-scrollbar">
+                {changelog.map((entry, idx) => (
+                  <div key={entry.version} className={`pb-6 ${idx !== changelog.length - 1 ? 'border-b border-slate-100' : ''}`}>
+                    <div className="flex items-center justify-between mb-3">
+                      <span className="px-3 py-1 bg-blue-800 text-white text-[10px] font-bold rounded-full">
+                        {t.versionLabel} {entry.version}
+                      </span>
+                      <span className="text-[10px] text-slate-400 font-medium">
+                        {t.dateLabel}: {entry.date}
+                      </span>
+                    </div>
+                    <ul className="space-y-2">
+                      {entry.changes[lang].map((change, i) => (
+                        <li key={i} className="flex items-start gap-2 text-sm text-slate-600">
+                          <div className="w-1.5 h-1.5 rounded-full bg-blue-400 mt-1.5 flex-shrink-0" />
+                          {change}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                ))}
+              </div>
+
+              <button
+                onClick={onClose}
+                className="w-full mt-6 bg-blue-800 hover:bg-blue-900 text-white font-bold py-3 rounded-xl transition-all shadow-lg active:scale-[0.98] text-sm"
+              >
+                Đóng
+              </button>
+            </div>
+          </motion.div>
+        </div>
+      )}
+    </AnimatePresence>
+  );
+}
+
 export default function App() {
   const [keyword, setKeyword] = useState('');
   const [result, setResult] = useState('');
@@ -284,6 +372,7 @@ export default function App() {
   const [showSettings, setShowSettings] = useState(() => {
     return !localStorage.getItem('gemini_api_key');
   });
+  const [showChangelog, setShowChangelog] = useState(false);
   const [copySuccess, setCopySuccess] = useState(false);
   const [lang, setLang] = useState<'vi' | 'en'>('vi');
   const [selectedModel, setSelectedModel] = useState<'gemini-3-flash-preview' | 'gemini-3.1-flash-lite-preview'>('gemini-3-flash-preview');
@@ -555,6 +644,13 @@ export default function App() {
               <Home className="w-3.5 h-3.5" />
               <span className="hidden sm:inline">{t.homeBtn}</span>
             </a>
+            <button
+              onClick={() => setShowChangelog(true)}
+              className="p-2 hover:bg-slate-100 rounded-xl transition-all text-slate-500"
+              title={t.changelogTitle}
+            >
+              <Info className="w-5 h-5" />
+            </button>
             <button
               onClick={() => setShowSettings(!showSettings)}
               className={`p-2 hover:bg-slate-100 rounded-xl transition-all ${showSettings ? 'text-blue-800 bg-blue-50' : 'text-slate-500'}`}
@@ -832,6 +928,14 @@ export default function App() {
         onApiKeyChange={handleApiKeyChange}
         selectedModel={selectedModel}
         onModelChange={setSelectedModel}
+      />
+
+      {/* Changelog Modal */}
+      <ChangelogModal
+        show={showChangelog}
+        onClose={() => setShowChangelog(false)}
+        t={t}
+        lang={lang}
       />
     </div>
   );
